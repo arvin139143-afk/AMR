@@ -1,0 +1,3764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AMR — AI & IT Solutions</title>
+  <!-- Firebase Auth -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as fbSignOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+    // ── REPLACE THESE WITH YOUR FIREBASE PROJECT CONFIG ──
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    window.__fbAuth = auth;
+    window.__fbSignInWithGoogle = () => signInWithPopup(auth, provider);
+    window.__fbSignOut = () => fbSignOut(auth);
+    window.__fbOnAuthStateChanged = (cb) => onAuthStateChanged(auth, cb);
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #03050a;
+      --surface:  #080d18;
+      --layer:    #0b1220;
+      --border:   rgba(255,255,255,.06);
+      --border-h: rgba(99,160,255,.22);
+      --blue:     #1d4ed8;
+      --blue-v:   #2563eb;
+      --glow:     #3b82f6;
+      --pale:     #93c5fd;
+      --cyan:     #22d3ee;
+      --txt:      #e8edf8;
+      --muted:    #4a5a78;
+      --dim:      rgba(180,200,240,.45);
+      --mono:     'DM Mono', monospace;
+      --sans:     'DM Sans', sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+    body{
+      background:var(--bg);
+      color:var(--txt);
+      font-family:var(--sans);
+      overflow-x:hidden;
+    }
+
+    /* ─── noise overlay ─── */
+    body::after{
+      content:'';
+      position:fixed;inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events:none;
+      z-index:1000;
+      opacity:.35;
+    }
+
+    /* ─── grid bg ─── */
+    body::before{
+      content:'';
+      position:fixed;inset:0;
+      background-image:
+        linear-gradient(rgba(59,130,246,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(59,130,246,.035) 1px,transparent 1px);
+      background-size:64px 64px;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    /* ─── NAV ─── */
+    nav{
+      position:fixed;top:0;left:0;right:0;z-index:200;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 64px;
+      height:60px;
+      background:rgba(3,5,10,.75);
+      backdrop-filter:blur(20px) saturate(1.4);
+      border-bottom:1px solid var(--border);
+    }
+    .logo{
+      font-family:var(--mono);
+      font-size:18px;font-weight:500;
+      letter-spacing:.18em;
+      color:var(--txt);
+      text-decoration:none;
+    }
+    .logo em{color:var(--glow);font-style:normal;}
+    .nav-center{display:flex;gap:0;}
+    .nav-center a{
+      font-size:13px;font-weight:400;
+      color:var(--muted);
+      text-decoration:none;
+      padding:0 18px;
+      height:60px;
+      display:flex;align-items:center;
+      border-bottom:2px solid transparent;
+      transition:color .2s,border-color .2s;
+      letter-spacing:.02em;
+    }
+    .nav-center a:hover{color:var(--txt);border-bottom-color:var(--glow);}
+    .nav-right{display:flex;align-items:center;gap:12px;}
+    .btn-nav{
+      font-size:12.5px;font-weight:500;
+      padding:7px 18px;
+      border-radius:5px;
+      text-decoration:none;
+      letter-spacing:.03em;
+      transition:all .2s;
+    }
+    .btn-nav.ghost{
+      color:var(--dim);
+      border:1px solid var(--border);
+    }
+    .btn-nav.ghost:hover{color:var(--txt);border-color:var(--border-h);}
+    .btn-nav.solid{
+      background:var(--blue-v);
+      color:#fff;
+      border:1px solid transparent;
+    }
+    .btn-nav.solid:hover{background:var(--blue);box-shadow:0 0 22px rgba(37,99,235,.45);}
+
+    /* ─── HERO ─── */
+    #hero{
+      position:relative;
+      z-index:1;
+      min-height:100vh;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      text-align:center;
+      padding:120px 32px 100px;
+      overflow:hidden;
+    }
+
+    /* radial spotlight */
+    .spotlight{
+      position:absolute;
+      top:-10%;left:50%;
+      transform:translateX(-50%);
+      width:900px;height:600px;
+      background:radial-gradient(ellipse at center,
+        rgba(37,99,235,.18) 0%,
+        rgba(29,78,216,.06) 45%,
+        transparent 70%);
+      pointer-events:none;
+    }
+    .spotlight2{
+      position:absolute;
+      bottom:0;left:30%;
+      width:500px;height:400px;
+      background:radial-gradient(ellipse,rgba(34,211,238,.07),transparent 70%);
+      pointer-events:none;
+    }
+
+    /* animated ring */
+    .ring{
+      position:absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-55%);
+      width:700px;height:700px;
+      border-radius:50%;
+      border:1px solid rgba(59,130,246,.06);
+      animation:spin 24s linear infinite;
+      pointer-events:none;
+    }
+    .ring::before{
+      content:'';
+      position:absolute;
+      top:-1px;left:40%;
+      width:32px;height:2px;
+      background:linear-gradient(90deg,transparent,var(--glow));
+      border-radius:2px;
+    }
+    .ring2{
+      width:480px;height:480px;
+      border-color:rgba(59,130,246,.04);
+      animation-duration:18s;animation-direction:reverse;
+    }
+    @keyframes spin{to{transform:translate(-50%,-55%) rotate(360deg)}}
+
+    .hero-badge{
+      display:inline-flex;align-items:center;gap:8px;
+      font-family:var(--mono);
+      font-size:11px;letter-spacing:.2em;
+      color:var(--pale);
+      background:rgba(59,130,246,.08);
+      border:1px solid rgba(59,130,246,.18);
+      padding:5px 14px 5px 10px;
+      border-radius:40px;
+      margin-bottom:36px;
+      opacity:0;animation:up .7s .1s ease forwards;
+    }
+    .badge-dot{
+      width:6px;height:6px;border-radius:50%;
+      background:var(--glow);
+      box-shadow:0 0 8px var(--glow);
+      animation:blink 2s ease-in-out infinite;
+    }
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+    h1{
+      font-size:clamp(48px,8.5vw,104px);
+      font-weight:700;
+      line-height:1.0;
+      letter-spacing:-.03em;
+      color:var(--txt);
+      opacity:0;animation:up .8s .25s ease forwards;
+    }
+    h1 .dim-word{
+      font-weight:300;
+      color:rgba(232,237,248,.28);
+    }
+    h1 .blue-word{
+      background:linear-gradient(135deg,var(--glow),var(--cyan));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+
+    .hero-desc{
+      max-width:500px;
+      font-size:16px;font-weight:300;
+      line-height:1.75;
+      color:var(--dim);
+      margin-top:28px;
+      opacity:0;animation:up .8s .45s ease forwards;
+    }
+
+    .hero-actions{
+      display:flex;align-items:center;gap:14px;
+      margin-top:44px;
+      opacity:0;animation:up .8s .62s ease forwards;
+    }
+    .btn-lg{
+      font-size:14px;font-weight:500;
+      padding:13px 28px;
+      border-radius:6px;
+      text-decoration:none;
+      letter-spacing:.02em;
+      transition:all .2s;
+    }
+    .btn-lg.primary{
+      background:var(--blue-v);color:#fff;
+      border:1px solid var(--blue-v);
+    }
+    .btn-lg.primary:hover{
+      background:var(--blue);
+      box-shadow:0 0 32px rgba(37,99,235,.5);
+      transform:translateY(-1px);
+    }
+    .btn-lg.outline{
+      color:var(--dim);
+      border:1px solid var(--border);
+    }
+    .btn-lg.outline:hover{color:var(--txt);border-color:var(--border-h);}
+
+    /* brand strip */
+    .brand-strip{
+      position:absolute;bottom:52px;left:0;right:0;
+      display:flex;flex-direction:column;align-items:center;gap:18px;
+      opacity:0;animation:up .8s 1s ease forwards;
+    }
+    .brand-label{
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:.25em;color:var(--muted);
+    }
+    .brand-line{
+      display:flex;align-items:center;gap:40px;
+    }
+    .brand-item{
+      font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+      color:rgba(100,130,180,.3);
+      user-select:none;
+    }
+
+    @keyframes up{
+      from{opacity:0;transform:translateY(20px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    /* ─── SECTION SHELL ─── */
+    .wrap{max-width:1160px;margin:0 auto;padding:0 48px;}
+    .sec{position:relative;z-index:1;padding:120px 0;}
+    .sec-label{
+      font-family:var(--mono);font-size:10.5px;
+      letter-spacing:.28em;color:var(--glow);
+      margin-bottom:16px;text-transform:uppercase;
+    }
+    .sec-title{
+      font-size:clamp(28px,3.8vw,46px);
+      font-weight:700;letter-spacing:-.025em;
+      line-height:1.12;color:var(--txt);
+    }
+    .sec-title .accent{
+      background:linear-gradient(120deg,var(--glow),var(--cyan));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .sep{
+      max-width:1160px;margin:0 auto;
+      height:1px;
+      background:linear-gradient(90deg,transparent,var(--border),transparent);
+    }
+
+    /* ─── SERVICES ─── */
+    .services-grid{
+      margin-top:56px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:1px;
+      background:var(--border);
+      border:1px solid var(--border);
+      border-radius:2px;
+      overflow:hidden;
+    }
+    .svc{
+      background:var(--surface);
+      padding:40px 36px;
+      position:relative;
+      overflow:hidden;
+      transition:background .3s;
+    }
+    .svc:hover{background:var(--layer);}
+    .svc-top{
+      display:flex;align-items:flex-start;
+      justify-content:space-between;
+      margin-bottom:24px;
+    }
+    .svc-icon{
+      width:40px;height:40px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(37,99,235,.1);
+      border:1px solid rgba(37,99,235,.18);
+      border-radius:8px;
+      font-size:18px;
+    }
+    .svc-n{
+      font-family:var(--mono);font-size:11px;
+      color:rgba(99,160,255,.2);letter-spacing:.08em;
+    }
+    .svc h3{
+      font-size:16px;font-weight:600;
+      letter-spacing:-.01em;
+      color:var(--txt);margin-bottom:10px;
+    }
+    .svc p{
+      font-size:13.5px;font-weight:300;
+      line-height:1.7;color:var(--dim);
+    }
+    .svc-tag{
+      display:inline-block;
+      margin-top:20px;
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:.12em;
+      color:var(--glow);
+      background:rgba(59,130,246,.07);
+      border:1px solid rgba(59,130,246,.12);
+      padding:3px 10px;border-radius:3px;
+    }
+    /* subtle top line on hover */
+    .svc::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--glow),transparent);
+      transform:scaleX(0);transition:transform .4s ease;
+    }
+    .svc:hover::before{transform:scaleX(1);}
+
+    /* ─── HOW WE WORK ─── */
+    .process{
+      margin-top:64px;
+      display:grid;grid-template-columns:repeat(4,1fr);
+      gap:1px;background:var(--border);
+      border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .step{
+      background:var(--surface);
+      padding:40px 32px;
+      position:relative;
+    }
+    .step-num{
+      font-family:var(--mono);
+      font-size:36px;font-weight:300;
+      color:rgba(59,130,246,.12);
+      line-height:1;margin-bottom:20px;
+    }
+    .step h3{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:10px;}
+    .step p{font-size:13px;font-weight:300;line-height:1.65;color:var(--dim);}
+
+    /* connector line */
+    .step:not(:last-child)::after{
+      content:'→';
+      position:absolute;top:36px;right:-10px;
+      font-size:14px;color:rgba(59,130,246,.2);
+      z-index:2;
+    }
+
+    /* ─── TEAM ─── */
+    .team-grid{
+      margin-top:56px;
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:1px;background:var(--border);
+      border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .founder{
+      background:var(--surface);
+      padding:44px 38px;
+      position:relative;overflow:hidden;
+      transition:background .3s;
+    }
+    .founder:hover{background:var(--layer);}
+    .f-mono{
+      font-family:var(--mono);font-size:11px;
+      letter-spacing:.18em;color:rgba(59,130,246,.35);
+      margin-bottom:28px;
+    }
+    .f-avatar{
+      width:52px;height:52px;
+      border-radius:12px;
+      background:linear-gradient(135deg,rgba(29,78,216,.8),rgba(34,211,238,.6));
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--mono);font-size:16px;font-weight:500;
+      color:#fff;
+      margin-bottom:20px;
+      letter-spacing:.04em;
+    }
+    .f-name{
+      font-size:19px;font-weight:600;
+      letter-spacing:-.02em;
+      color:var(--txt);margin-bottom:4px;
+    }
+    .f-title{
+      font-family:var(--mono);font-size:11px;
+      letter-spacing:.12em;color:var(--glow);
+    }
+    .f-div{width:28px;height:1px;background:var(--border);margin:20px 0;}
+    .f-desc{font-size:13.5px;font-weight:300;line-height:1.72;color:var(--dim);}
+
+    /* ─── CAPABILITIES ─── */
+    .caps{
+      margin-top:64px;
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:1px;background:var(--border);
+      border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .cap{
+      background:var(--surface);
+      padding:36px 40px;
+      display:flex;align-items:flex-start;gap:20px;
+      transition:background .3s;
+    }
+    .cap:hover{background:var(--layer);}
+    .cap-icon{
+      flex-shrink:0;
+      width:36px;height:36px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;
+      background:rgba(37,99,235,.08);
+      border:1px solid rgba(37,99,235,.14);
+      border-radius:7px;
+      margin-top:2px;
+    }
+    .cap h3{font-size:14.5px;font-weight:600;color:var(--txt);margin-bottom:6px;letter-spacing:-.01em;}
+    .cap p{font-size:13px;font-weight:300;line-height:1.65;color:var(--dim);}
+
+    /* ─── CTA ─── */
+    #cta{
+      position:relative;z-index:1;
+      padding:120px 0;
+    }
+    .cta-box{
+      max-width:1160px;margin:0 auto;
+      padding:80px 80px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:3px;
+      position:relative;overflow:hidden;
+      text-align:left;
+      display:grid;grid-template-columns:1fr auto;
+      align-items:center;gap:60px;
+    }
+    .cta-box::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,var(--blue-v),var(--cyan),transparent);
+    }
+    .cta-glow{
+      position:absolute;top:-60px;left:-60px;
+      width:400px;height:400px;
+      background:radial-gradient(circle,rgba(37,99,235,.1),transparent 65%);
+      pointer-events:none;
+    }
+    .cta-heading{
+      font-size:clamp(26px,3vw,40px);font-weight:700;
+      letter-spacing:-.025em;color:var(--txt);margin-bottom:12px;
+    }
+    .cta-sub{font-size:15px;font-weight:300;color:var(--dim);line-height:1.65;}
+    .cta-actions{display:flex;flex-direction:column;gap:12px;align-items:flex-end;flex-shrink:0;}
+
+    /* ─── FOOTER ─── */
+    footer{
+      position:relative;z-index:1;
+      border-top:1px solid var(--border);
+      padding:36px 0;
+    }
+    .footer-inner{
+      max-width:1160px;margin:0 auto;padding:0 48px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .footer-logo{font-family:var(--mono);font-size:15px;letter-spacing:.18em;color:var(--txt);}
+    .footer-logo em{color:var(--glow);font-style:normal;}
+    .footer-mid{display:flex;gap:32px;}
+    .footer-mid a{font-size:12.5px;color:var(--muted);text-decoration:none;letter-spacing:.03em;transition:color .2s;}
+    .footer-mid a:hover{color:var(--txt);}
+    .footer-copy{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;}
+
+    /* ─── PRODUCTS ─── */
+    .products-grid{
+      margin-top:56px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:20px;
+    }
+    .prod-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:36px 32px;
+      position:relative;
+      overflow:hidden;
+      transition:border-color .3s, background .3s, transform .3s;
+      cursor:default;
+    }
+    .prod-card:hover{
+      background:var(--layer);
+      border-color:var(--border-h);
+      transform:translateY(-3px);
+    }
+    .prod-card::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,var(--blue-v),var(--cyan));
+      opacity:0;transition:opacity .3s;
+    }
+    .prod-card:hover::before{opacity:1;}
+    .prod-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+      color:var(--glow);
+      background:rgba(59,130,246,.07);
+      border:1px solid rgba(59,130,246,.14);
+      padding:3px 10px;border-radius:3px;
+      margin-bottom:24px;
+    }
+    .prod-icon{
+      font-size:28px;margin-bottom:16px;
+      display:block;
+    }
+    .prod-card h3{
+      font-size:17px;font-weight:600;
+      letter-spacing:-.015em;
+      color:var(--txt);margin-bottom:10px;
+    }
+    .prod-card p{
+      font-size:13.5px;font-weight:300;
+      line-height:1.72;color:var(--dim);
+      margin-bottom:24px;
+    }
+    .prod-link{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12.5px;font-weight:500;
+      color:var(--pale);
+      text-decoration:none;
+      letter-spacing:.02em;
+      transition:color .2s,gap .2s;
+    }
+    .prod-link:hover{color:#fff;gap:10px;}
+
+    /* ─── AI CHAT WIDGET ─── */
+    #ai-chat-btn{
+      position:fixed;
+      bottom:28px;right:28px;
+      z-index:500;
+      width:54px;height:54px;
+      border-radius:50%;
+      background:linear-gradient(135deg,var(--blue-v),var(--cyan));
+      border:none;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 24px rgba(37,99,235,.4);
+      transition:transform .2s,box-shadow .2s;
+    }
+    #ai-chat-btn:hover{
+      transform:scale(1.08);
+      box-shadow:0 6px 32px rgba(37,99,235,.6);
+    }
+    #ai-chat-btn svg{width:22px;height:22px;fill:#fff;}
+
+    #ai-chat-panel{
+      position:fixed;
+      bottom:92px;right:28px;
+      z-index:500;
+      width:360px;
+      max-height:520px;
+      background:var(--surface);
+      border:1px solid var(--border-h);
+      border-radius:12px;
+      display:flex;flex-direction:column;
+      overflow:hidden;
+      box-shadow:0 24px 60px rgba(0,0,0,.6);
+      transform:scale(.92) translateY(12px);
+      opacity:0;
+      pointer-events:none;
+      transition:transform .25s ease,opacity .25s ease;
+    }
+    #ai-chat-panel.open{
+      transform:scale(1) translateY(0);
+      opacity:1;
+      pointer-events:all;
+    }
+    .chat-header{
+      padding:16px 20px;
+      background:rgba(8,13,24,.9);
+      border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:12px;
+    }
+    .chat-header-dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--glow);
+      box-shadow:0 0 8px var(--glow);
+      animation:blink 2s ease-in-out infinite;
+      flex-shrink:0;
+    }
+    .chat-header-text{flex:1;}
+    .chat-header-text strong{
+      font-size:13.5px;font-weight:600;color:var(--txt);display:block;
+    }
+    .chat-header-text span{
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:.12em;color:var(--glow);
+    }
+    .chat-close{
+      background:none;border:none;cursor:pointer;
+      color:var(--muted);font-size:18px;line-height:1;
+      transition:color .2s;padding:2px;
+    }
+    .chat-close:hover{color:var(--txt);}
+
+    .chat-messages{
+      flex:1;overflow-y:auto;
+      padding:16px;
+      display:flex;flex-direction:column;
+      gap:12px;
+      scrollbar-width:thin;
+      scrollbar-color:var(--border) transparent;
+    }
+    .chat-messages::-webkit-scrollbar{width:4px;}
+    .chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+    .msg{
+      max-width:88%;
+      font-size:13px;line-height:1.6;
+      padding:10px 14px;
+      border-radius:8px;
+      animation:msgIn .2s ease;
+    }
+    @keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .msg.ai{
+      background:rgba(37,99,235,.1);
+      border:1px solid rgba(37,99,235,.15);
+      color:var(--txt);
+      align-self:flex-start;
+    }
+    .msg.user{
+      background:var(--blue-v);
+      color:#fff;
+      align-self:flex-end;
+    }
+    .msg-typing{
+      display:flex;align-items:center;gap:4px;
+      padding:10px 14px;
+      background:rgba(37,99,235,.08);
+      border:1px solid rgba(37,99,235,.12);
+      border-radius:8px;
+      align-self:flex-start;
+    }
+    .msg-typing span{
+      width:5px;height:5px;border-radius:50%;
+      background:var(--glow);opacity:.5;
+      animation:typingDot .9s ease-in-out infinite;
+    }
+    .msg-typing span:nth-child(2){animation-delay:.18s;}
+    .msg-typing span:nth-child(3){animation-delay:.36s;}
+    @keyframes typingDot{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+
+    .chat-suggestions{
+      display:flex;flex-wrap:wrap;gap:6px;
+      padding:0 16px 10px;
+    }
+    .chat-suggestion{
+      font-size:11.5px;padding:5px 11px;
+      background:rgba(37,99,235,.07);
+      border:1px solid rgba(37,99,235,.15);
+      border-radius:20px;
+      color:var(--pale);
+      cursor:pointer;
+      transition:background .2s,color .2s;
+      font-family:var(--sans);
+    }
+    .chat-suggestion:hover{background:rgba(37,99,235,.18);color:#fff;}
+
+    .chat-input-row{
+      padding:12px 16px;
+      border-top:1px solid var(--border);
+      display:flex;gap:8px;align-items:flex-end;
+    }
+    #chat-input{
+      flex:1;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:9px 13px;
+      color:var(--txt);
+      font-family:var(--sans);font-size:13px;
+      resize:none;
+      max-height:90px;
+      outline:none;
+      transition:border-color .2s;
+      line-height:1.5;
+    }
+    #chat-input:focus{border-color:var(--border-h);}
+    #chat-input::placeholder{color:var(--muted);}
+    #chat-send{
+      width:36px;height:36px;flex-shrink:0;
+      background:var(--blue-v);
+      border:none;border-radius:6px;
+      cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      transition:background .2s;
+    }
+    #chat-send:hover{background:var(--blue);}
+    #chat-send svg{width:15px;height:15px;fill:#fff;}
+    #chat-send:disabled{background:var(--muted);cursor:default;}
+
+    /* ─── PROJECTS ─── */
+    .projects-grid{
+      margin-top:56px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:1px;
+      background:var(--border);
+      border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .proj-card{
+      background:var(--surface);
+      padding:38px 34px;
+      position:relative;
+      overflow:hidden;
+      transition:background .3s;
+    }
+    .proj-card:hover{background:var(--layer);}
+    .proj-card::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+      transform:scaleX(0);transition:transform .4s ease;
+    }
+    .proj-card:hover::before{transform:scaleX(1);}
+    .proj-meta{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:22px;
+    }
+    .proj-tag{
+      font-family:var(--mono);font-size:10px;letter-spacing:.15em;
+      color:var(--cyan);
+      background:rgba(34,211,238,.07);
+      border:1px solid rgba(34,211,238,.14);
+      padding:3px 10px;border-radius:3px;
+    }
+    .proj-year{
+      font-family:var(--mono);font-size:10px;
+      color:var(--muted);letter-spacing:.08em;
+    }
+    .proj-img{
+      font-size:26px;margin-bottom:16px;display:block;
+    }
+    .proj-card h3{
+      font-size:16px;font-weight:600;letter-spacing:-.015em;
+      color:var(--txt);margin-bottom:10px;
+    }
+    .proj-card p{
+      font-size:13px;font-weight:300;line-height:1.7;
+      color:var(--dim);margin-bottom:20px;
+    }
+    .proj-stack{
+      display:flex;flex-wrap:wrap;gap:6px;
+    }
+    .proj-stack span{
+      font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+      color:var(--muted);
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      padding:2px 8px;border-radius:3px;
+    }
+
+    /* ─── AUTH MODAL ─── */
+    .auth-overlay{
+      display:none;
+      position:fixed;inset:0;z-index:800;
+      background:rgba(3,5,10,.85);
+      backdrop-filter:blur(8px);
+      align-items:center;justify-content:center;
+    }
+    .auth-overlay.open{display:flex;}
+    .auth-modal{
+      background:var(--surface);
+      border:1px solid var(--border-h);
+      border-radius:12px;
+      padding:48px 44px;
+      width:100%;max-width:420px;
+      position:relative;
+      box-shadow:0 32px 80px rgba(0,0,0,.7);
+    }
+    .auth-modal::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,var(--blue-v),var(--cyan),transparent);
+      border-radius:12px 12px 0 0;
+    }
+    .auth-close{
+      position:absolute;top:16px;right:20px;
+      background:none;border:none;cursor:pointer;
+      color:var(--muted);font-size:20px;line-height:1;
+      transition:color .2s;
+    }
+    .auth-close:hover{color:var(--txt);}
+    .auth-logo{
+      font-family:var(--mono);font-size:16px;font-weight:500;
+      letter-spacing:.2em;color:var(--txt);
+      margin-bottom:28px;
+    }
+    .auth-logo em{color:var(--glow);font-style:normal;}
+    .auth-title{
+      font-size:22px;font-weight:700;letter-spacing:-.02em;
+      color:var(--txt);margin-bottom:6px;
+    }
+    .auth-sub{
+      font-size:13px;font-weight:300;color:var(--dim);
+      margin-bottom:32px;line-height:1.6;
+    }
+    .btn-google{
+      width:100%;
+      display:flex;align-items:center;justify-content:center;gap:12px;
+      padding:13px 20px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--border-h);
+      border-radius:7px;
+      color:var(--txt);
+      font-size:14px;font-weight:500;
+      cursor:pointer;
+      transition:background .2s,border-color .2s,box-shadow .2s;
+      font-family:var(--sans);
+      text-decoration:none;
+    }
+    .btn-google:hover{
+      background:rgba(255,255,255,.09);
+      border-color:rgba(99,160,255,.4);
+      box-shadow:0 0 24px rgba(37,99,235,.2);
+    }
+    .btn-google svg{width:18px;height:18px;flex-shrink:0;}
+    .auth-divider{
+      display:flex;align-items:center;gap:14px;
+      margin:22px 0;
+    }
+    .auth-divider::before,.auth-divider::after{
+      content:'';flex:1;height:1px;
+      background:var(--border);
+    }
+    .auth-divider span{
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:.15em;color:var(--muted);
+    }
+    .auth-field{
+      margin-bottom:14px;
+    }
+    .auth-field label{
+      display:block;font-size:11.5px;font-weight:500;
+      color:var(--dim);margin-bottom:6px;letter-spacing:.03em;
+    }
+    .auth-field input{
+      width:100%;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:10px 14px;
+      color:var(--txt);
+      font-family:var(--sans);font-size:13.5px;
+      outline:none;
+      transition:border-color .2s;
+    }
+    .auth-field input:focus{border-color:var(--border-h);}
+    .auth-field input::placeholder{color:var(--muted);}
+    .btn-auth-submit{
+      width:100%;
+      padding:13px 20px;
+      background:var(--blue-v);
+      color:#fff;
+      border:none;border-radius:7px;
+      font-size:14px;font-weight:500;
+      cursor:pointer;
+      transition:background .2s,box-shadow .2s;
+      font-family:var(--sans);
+      margin-top:6px;
+    }
+    .btn-auth-submit:hover{
+      background:var(--blue);
+      box-shadow:0 0 28px rgba(37,99,235,.45);
+    }
+    .auth-switch{
+      text-align:center;
+      margin-top:22px;
+      font-size:12.5px;color:var(--dim);
+    }
+    .auth-switch button{
+      background:none;border:none;
+      color:var(--pale);cursor:pointer;
+      font-size:12.5px;font-family:var(--sans);
+      text-decoration:underline;
+      transition:color .2s;
+    }
+    .auth-switch button:hover{color:#fff;}
+
+    /* ─── USER NAV STATE ─── */
+    .user-avatar-btn{
+      width:32px;height:32px;border-radius:50%;
+      background:linear-gradient(135deg,var(--blue-v),var(--cyan));
+      border:none;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--mono);font-size:11px;font-weight:500;
+      color:#fff;letter-spacing:.04em;
+      transition:box-shadow .2s;
+    }
+    .user-avatar-btn:hover{box-shadow:0 0 16px rgba(37,99,235,.5);}
+
+    @media(max-width:960px){
+      .projects-grid{grid-template-columns:1fr;}
+      .auth-modal{margin:16px;padding:36px 28px;}
+    }
+
+
+
+    @media(max-width:960px){
+      .products-grid{grid-template-columns:1fr;}
+      #ai-chat-panel{width:calc(100vw - 32px);right:16px;bottom:84px;}
+      #ai-chat-btn{bottom:20px;right:16px;}
+    }
+    .reveal{
+      opacity:0;transform:translateY(28px);
+      transition:opacity .65s ease,transform .65s ease;
+    }
+    .reveal.visible{opacity:1;transform:none;}
+
+    /* ─── RESPONSIVE ─── */
+    @media(max-width:960px){
+      nav{padding:0 24px;}
+      .nav-center{display:none;}
+      .wrap{padding:0 24px;}
+      .services-grid,.process,.team-grid{grid-template-columns:1fr;}
+      .caps{grid-template-columns:1fr;}
+      .cta-box{grid-template-columns:1fr;padding:48px 32px;gap:32px;}
+      .cta-actions{align-items:flex-start;}
+      .footer-inner{flex-direction:column;gap:20px;text-align:center;}
+      .footer-mid{flex-wrap:wrap;justify-content:center;}
+      .step::after{display:none;}
+    }
+
+    /* ─── DEV PANEL BUTTON ─── */
+    #dev-panel-btn {
+      position: fixed;
+      top: 70px;
+      right: 16px;
+      z-index: 600;
+      background: rgba(3,5,10,.85);
+      border: 1px solid rgba(34,211,238,.25);
+      border-radius: 6px;
+      padding: 5px 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--cyan);
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      backdrop-filter: blur(10px);
+    }
+    #dev-panel-btn:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 14px rgba(34,211,238,.2);
+      background: rgba(34,211,238,.06);
+    }
+    #dev-panel-btn .dev-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 6px var(--cyan);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    /* ─── DEV PASSWORD OVERLAY ─── */
+    #dev-pw-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 900;
+      background: rgba(3,5,10,.92);
+      backdrop-filter: blur(12px);
+      align-items: center; justify-content: center;
+    }
+    #dev-pw-overlay.open { display: flex; }
+    #dev-pw-box {
+      background: var(--surface);
+      border: 1px solid rgba(34,211,238,.2);
+      border-radius: 12px;
+      padding: 44px 40px;
+      width: 100%; max-width: 380px;
+      position: relative;
+      box-shadow: 0 32px 80px rgba(0,0,0,.8);
+    }
+    #dev-pw-box::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, var(--cyan), var(--blue-v), transparent);
+      border-radius: 12px 12px 0 0;
+    }
+    .dev-pw-label {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .22em;
+      color: var(--cyan); margin-bottom: 20px; display: block;
+    }
+    .dev-pw-title {
+      font-size: 20px; font-weight: 700; letter-spacing: -.02em;
+      color: var(--txt); margin-bottom: 6px;
+    }
+    .dev-pw-sub {
+      font-size: 12.5px; color: var(--dim); margin-bottom: 28px; line-height: 1.6;
+    }
+    #dev-pw-input {
+      width: 100%;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 11px 14px;
+      color: var(--txt);
+      font-family: var(--mono); font-size: 14px;
+      outline: none; letter-spacing: .08em;
+      transition: border-color .2s;
+      margin-bottom: 14px;
+    }
+    #dev-pw-input:focus { border-color: rgba(34,211,238,.4); }
+    #dev-pw-input::placeholder { color: var(--muted); letter-spacing: .04em; }
+    #dev-pw-error {
+      font-size: 11.5px; color: #f87171;
+      margin-bottom: 12px; min-height: 16px;
+      font-family: var(--mono);
+    }
+    #dev-pw-submit {
+      width: 100%; padding: 12px 20px;
+      background: rgba(34,211,238,.12);
+      border: 1px solid rgba(34,211,238,.25);
+      border-radius: 7px;
+      color: var(--cyan); font-size: 13px; font-weight: 500;
+      font-family: var(--mono); letter-spacing: .08em;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, box-shadow .2s;
+    }
+    #dev-pw-submit:hover {
+      background: rgba(34,211,238,.2);
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(34,211,238,.2);
+    }
+    #dev-pw-cancel {
+      width: 100%; padding: 10px;
+      background: none; border: none;
+      color: var(--muted); font-size: 12px;
+      font-family: var(--sans); cursor: pointer;
+      margin-top: 10px;
+      transition: color .2s;
+    }
+    #dev-pw-cancel:hover { color: var(--txt); }
+
+    /* ─── DEV DASHBOARD PANEL ─── */
+    #dev-dashboard {
+      display: none;
+      position: fixed; inset: 0; z-index: 850;
+      background: rgba(3,5,10,.96);
+      backdrop-filter: blur(20px);
+      overflow-y: auto;
+    }
+    #dev-dashboard.open { display: block; }
+    .dev-dash-header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(3,5,10,.95);
+      border-bottom: 1px solid rgba(34,211,238,.12);
+      backdrop-filter: blur(20px);
+      padding: 0 40px;
+      height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dev-dash-title {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .dev-dash-title .d-logo {
+      font-family: var(--mono); font-size: 15px; font-weight: 500;
+      letter-spacing: .15em; color: var(--txt);
+    }
+    .dev-dash-title .d-logo em { color: var(--cyan); font-style: normal; }
+    .dev-dash-title .d-tag {
+      font-family: var(--mono); font-size: 9px; letter-spacing: .22em;
+      color: var(--cyan);
+      background: rgba(34,211,238,.08);
+      border: 1px solid rgba(34,211,238,.18);
+      padding: 2px 8px; border-radius: 3px;
+    }
+    .dev-dash-actions { display: flex; align-items: center; gap: 12px; }
+    .dev-time {
+      font-family: var(--mono); font-size: 11px;
+      color: var(--muted); letter-spacing: .06em;
+    }
+    #dev-close-btn {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 14px;
+      color: var(--dim); font-size: 12px;
+      font-family: var(--mono); letter-spacing: .06em;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    #dev-close-btn:hover { color: var(--txt); border-color: var(--border-h); }
+
+    .dev-dash-body {
+      max-width: 1400px; margin: 0 auto;
+      padding: 36px 40px 80px;
+    }
+    .dev-section-label {
+      font-family: var(--mono); font-size: 9.5px;
+      letter-spacing: .25em; color: var(--cyan);
+      text-transform: uppercase;
+      margin: 36px 0 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .dev-section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: rgba(34,211,238,.1);
+    }
+    .dev-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+    }
+    .dev-card {
+      background: rgba(8,13,24,.8);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 8px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s, transform .15s;
+      display: flex; align-items: flex-start; gap: 11px;
+      position: relative; overflow: hidden;
+    }
+    .dev-card:hover {
+      border-color: rgba(34,211,238,.25);
+      background: rgba(34,211,238,.04);
+      transform: translateY(-1px);
+    }
+    .dev-card:active { transform: translateY(0); }
+    .dev-card .dc-icon {
+      font-size: 16px; flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .dev-card .dc-text { flex: 1; }
+    .dev-card .dc-name {
+      font-size: 12.5px; font-weight: 500;
+      color: var(--txt); line-height: 1.3;
+      margin-bottom: 2px;
+    }
+    .dev-card .dc-desc {
+      font-size: 10.5px; color: var(--muted);
+      font-family: var(--mono); letter-spacing: .02em;
+    }
+    .dev-card.active-toggle {
+      border-color: rgba(34,211,238,.35);
+      background: rgba(34,211,238,.06);
+    }
+    .dev-card.active-toggle .dc-name { color: var(--cyan); }
+
+    /* Stat cards */
+    .dev-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .dev-stat {
+      background: rgba(8,13,24,.8);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 8px;
+      padding: 18px 18px 14px;
+    }
+    .dev-stat .ds-val {
+      font-family: var(--mono); font-size: 28px; font-weight: 500;
+      color: var(--txt); letter-spacing: -.02em; line-height: 1;
+      margin-bottom: 6px;
+    }
+    .dev-stat .ds-val em { color: var(--cyan); font-style: normal; }
+    .dev-stat .ds-label {
+      font-family: var(--mono); font-size: 9.5px;
+      letter-spacing: .18em; color: var(--muted);
+    }
+    .dev-stat .ds-badge {
+      display: inline-block;
+      font-family: var(--mono); font-size: 9px;
+      padding: 2px 6px; border-radius: 3px;
+      margin-left: 6px;
+    }
+    .ds-badge.up { background: rgba(34,197,94,.12); color: #4ade80; }
+    .ds-badge.down { background: rgba(248,113,113,.12); color: #f87171; }
+
+    /* Feature toggle */
+    .toggle-switch {
+      position: relative;
+      width: 32px; height: 18px; flex-shrink: 0;
+    }
+    .toggle-switch input { display: none; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: transform .2s, background .2s;
+    }
+    .toggle-switch input:checked ~ .toggle-track {
+      background: rgba(34,211,238,.2);
+      border-color: rgba(34,211,238,.4);
+    }
+    .toggle-switch input:checked ~ .toggle-track::after {
+      transform: translateX(14px);
+      background: var(--cyan);
+    }
+
+    /* Server status */
+    .server-status-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .srv-item {
+      background: rgba(8,13,24,.8);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 11px;
+    }
+    .srv-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .srv-dot.green { background: #4ade80; box-shadow: 0 0 6px #4ade80; animation: blink 2s ease-in-out infinite; }
+    .srv-dot.yellow { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+    .srv-dot.red { background: #f87171; box-shadow: 0 0 6px #f87171; }
+    .srv-name { color: var(--dim); }
+    .srv-ping { color: var(--muted); font-size: 9.5px; margin-left: 4px; }
+
+    /* Dev console chat */
+    #dev-ai-console {
+      background: rgba(3,5,10,.9);
+      border: 1px solid rgba(34,211,238,.15);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .dac-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(34,211,238,.1);
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(34,211,238,.04);
+    }
+    .dac-header strong {
+      font-family: var(--mono); font-size: 11px;
+      letter-spacing: .1em; color: var(--cyan);
+    }
+    .dac-header span {
+      font-family: var(--mono); font-size: 9px;
+      color: var(--muted); letter-spacing: .06em;
+    }
+    #dac-messages {
+      height: 200px; overflow-y: auto;
+      padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(34,211,238,.15) transparent;
+    }
+    #dac-messages .dm {
+      font-size: 12.5px; line-height: 1.6;
+      padding: 8px 12px; border-radius: 6px;
+      animation: msgIn .2s ease;
+    }
+    #dac-messages .dm.ai {
+      background: rgba(34,211,238,.06);
+      border: 1px solid rgba(34,211,238,.12);
+      color: var(--txt);
+      align-self: flex-start;
+      font-family: var(--mono);
+      max-width: 90%;
+    }
+    #dac-messages .dm.user {
+      background: var(--blue-v); color: #fff;
+      align-self: flex-end; max-width: 80%;
+    }
+    #dac-messages .dm-typing {
+      display: flex; gap: 4px; padding: 8px 12px;
+      background: rgba(34,211,238,.06);
+      border: 1px solid rgba(34,211,238,.1);
+      border-radius: 6px; align-self: flex-start;
+    }
+    #dac-messages .dm-typing span {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--cyan); opacity: .5;
+      animation: typingDot .9s ease-in-out infinite;
+    }
+    #dac-messages .dm-typing span:nth-child(2){animation-delay:.18s;}
+    #dac-messages .dm-typing span:nth-child(3){animation-delay:.36s;}
+    .dac-input-row {
+      border-top: 1px solid rgba(34,211,238,.1);
+      display: flex; gap: 0;
+    }
+    #dac-input {
+      flex: 1; background: transparent;
+      border: none; outline: none;
+      padding: 12px 16px;
+      color: var(--txt); font-family: var(--mono); font-size: 12px;
+    }
+    #dac-input::placeholder { color: var(--muted); }
+    #dac-send {
+      background: rgba(34,211,238,.1);
+      border: none; border-left: 1px solid rgba(34,211,238,.1);
+      padding: 0 18px;
+      color: var(--cyan); font-family: var(--mono); font-size: 11px;
+      cursor: pointer; letter-spacing: .06em;
+      transition: background .2s;
+    }
+    #dac-send:hover { background: rgba(34,211,238,.2); }
+
+    @media(max-width:768px){
+      .dev-dash-body { padding: 24px 20px 60px; }
+      .dev-dash-header { padding: 0 20px; }
+      .dev-grid { grid-template-columns: 1fr 1fr; }
+      .dev-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="#">A<em>M</em>R</a>
+  <div class="nav-center">
+    <a href="#services">Services</a>
+    <a href="#projects">Projects</a>
+    <a href="#how">Process</a>
+    <a href="#team">Team</a>
+    <a href="#cta">Contact</a>
+  </div>
+  <div class="nav-right" id="nav-right">
+    <button onclick="openAuth('login')" class="btn-nav ghost">Log in</button>
+    <button onclick="openAuth('signup')" class="btn-nav solid">Get started</button>
+  </div>
+</nav>
+
+<!-- DEV PANEL BUTTON -->
+<button id="dev-panel-btn" onclick="openDevPw()" title="Developer Panel">
+  <span class="dev-dot"></span>
+  DEV
+</button>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="spotlight"></div>
+  <div class="spotlight2"></div>
+  <div class="ring"></div>
+  <div class="ring ring2"></div>
+
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    AI &amp; IT Solutions
+  </div>
+
+  <h1>
+    <span class="dim-word">Build the</span><br>
+    <span class="blue-word">future</span><br>
+    <span class="dim-word">with us.</span>
+  </h1>
+
+  <p class="hero-desc">
+    AMR delivers end-to-end artificial intelligence and IT infrastructure services — from model design to full-scale deployment.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#services" class="btn-lg primary">Explore services</a>
+    <a href="#team" class="btn-lg outline">Meet the team →</a>
+  </div>
+
+  <div class="brand-strip">
+    <span class="brand-label">WHAT WE DO</span>
+    <div class="brand-line">
+      <span class="brand-item">AI SYSTEMS</span>
+      <span class="brand-item">·</span>
+      <span class="brand-item">CLOUD INFRA</span>
+      <span class="brand-item">·</span>
+      <span class="brand-item">CYBERSECURITY</span>
+      <span class="brand-item">·</span>
+      <span class="brand-item">DATA ENGINEERING</span>
+      <span class="brand-item">·</span>
+      <span class="brand-item">AUTOMATION</span>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="sec" id="services">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-label">// Services</div>
+      <h2 class="sec-title">What we <span class="accent">deliver</span></h2>
+    </div>
+    <div class="services-grid reveal">
+      <div class="svc">
+        <div class="svc-top">
+          <div class="svc-icon">🤖</div>
+          <span class="svc-n">01</span>
+        </div>
+        <h3>Custom AI Systems</h3>
+        <p>Design and deployment of machine learning models tailored to your domain — from NLP pipelines to computer vision and predictive analytics.</p>
+        <span class="svc-tag">AI / ML</span>
+      </div>
+      <div class="svc">
+        <div class="svc-top">
+          <div class="svc-icon">☁️</div>
+          <span class="svc-n">02</span>
+        </div>
+        <h3>Cloud Infrastructure</h3>
+        <p>Architecting scalable, resilient cloud environments on AWS, GCP, or Azure — optimized for performance and cost efficiency.</p>
+        <span class="svc-tag">Cloud / DevOps</span>
+      </div>
+      <div class="svc">
+        <div class="svc-top">
+          <div class="svc-icon">🔐</div>
+          <span class="svc-n">03</span>
+        </div>
+        <h3>Cybersecurity</h3>
+        <p>Vulnerability assessment, penetration testing, and layered defense implementation for organizations of any scale.</p>
+        <span class="svc-tag">Security</span>
+      </div>
+      <div class="svc">
+        <div class="svc-top">
+          <div class="svc-icon">📊</div>
+          <span class="svc-n">04</span>
+        </div>
+        <h3>Data Engineering</h3>
+        <p>Building robust data pipelines and real-time dashboards that transform raw information into actionable intelligence.</p>
+        <span class="svc-tag">Data / BI</span>
+      </div>
+      <div class="svc">
+        <div class="svc-top">
+          <div class="svc-icon">⚙️</div>
+          <span class="svc-n">05</span>
+        </div>
+        <h3>Process Automation</h3>
+        <p>Eliminating repetitive workflows through RPA and intelligent automation pipelines that integrate with existing systems.</p>
+        <span class="svc-tag">Automation</span>
+      </div>
+      <div class="svc">
+        <div class="svc-top">
+          <div class="svc-icon">🌐</div>
+          <span class="svc-n">06</span>
+        </div>
+        <h3>Software Development</h3>
+        <p>Full-stack applications built on microservice architecture — web, mobile, and API-first platforms built to enterprise standards.</p>
+        <span class="svc-tag">Engineering</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- PRODUCTS -->
+<section class="sec" id="products">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-label">// Products</div>
+      <h2 class="sec-title">Ready-to-deploy <span class="accent">solutions</span></h2>
+    </div>
+    <div class="products-grid reveal">
+
+      <div class="prod-card">
+        <span class="prod-badge">AVAILABLE NOW</span>
+        <span class="prod-icon">🧠</span>
+        <h3>AMR Insight</h3>
+        <p>A plug-and-play business intelligence layer powered by LLMs. Connect your data warehouse and start asking questions in plain language — no SQL required.</p>
+        <a href="#cta" class="prod-link">Request access →</a>
+      </div>
+
+      <div class="prod-card">
+        <span class="prod-badge">BETA</span>
+        <span class="prod-icon">🔐</span>
+        <h3>SecureNet Monitor</h3>
+        <p>Real-time threat detection for cloud environments. AI-driven anomaly scoring combined with automated incident response playbooks to cut MTTD by 80%.</p>
+        <a href="#cta" class="prod-link">Join beta →</a>
+      </div>
+
+      <div class="prod-card">
+        <span class="prod-badge">ENTERPRISE</span>
+        <span class="prod-icon">⚙️</span>
+        <h3>FlowForge</h3>
+        <p>Visual workflow automation that integrates with 200+ enterprise tools. Build, test, and deploy intelligent automation pipelines without writing a line of code.</p>
+        <a href="#cta" class="prod-link">Schedule demo →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- PROJECTS -->
+<section class="sec" id="projects">
+  <div class="wrap">
+    <div class="reveal" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+      <div>
+        <div class="sec-label">// Portfolio</div>
+        <h2 class="sec-title">Our <span class="accent">projects</span></h2>
+        <p style="font-size:14px;font-weight:300;color:var(--dim);margin-top:14px;max-width:520px;">Real work. Real results. A selection of the systems we've designed, built, and deployed.</p>
+      </div>
+      <button id="add-project-btn" onclick="openAddProjectModal()" style="margin-top:48px;display:flex;align-items:center;gap:8px;background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.28);color:var(--pale);font-size:12.5px;font-weight:500;padding:9px 18px;border-radius:6px;cursor:pointer;letter-spacing:.03em;font-family:var(--sans);transition:all .2s;">
+        <span style="font-size:16px;line-height:1;">+</span> Add Project
+      </button>
+    </div>
+    <div class="projects-grid reveal" id="projects-grid">
+
+      <div class="proj-card">
+        <div class="proj-meta">
+          <span class="proj-tag">AI / ML</span>
+          <span class="proj-year">2024</span>
+        </div>
+        <div class="proj-img">🧠</div>
+        <h3>NLP Document Classifier</h3>
+        <p>Built a fine-tuned transformer model that classifies legal documents with 97% accuracy — reducing manual review time by 14 hours per week for a law firm.</p>
+        <div class="proj-stack">
+          <span>Python</span><span>HuggingFace</span><span>FastAPI</span>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-meta">
+          <span class="proj-tag">Cloud / DevOps</span>
+          <span class="proj-year">2024</span>
+        </div>
+        <div class="proj-img">☁️</div>
+        <h3>Multi-Region AWS Migration</h3>
+        <p>Migrated a legacy monolith to a microservice architecture across 3 AWS regions with zero downtime. Cut monthly infrastructure cost by 38%.</p>
+        <div class="proj-stack">
+          <span>AWS</span><span>Terraform</span><span>Kubernetes</span>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-meta">
+          <span class="proj-tag">Security</span>
+          <span class="proj-year">2025</span>
+        </div>
+        <div class="proj-img">🔐</div>
+        <h3>Zero-Trust Network Rollout</h3>
+        <p>Designed and deployed a zero-trust architecture for a fintech startup. Passed SOC 2 Type II audit on the first attempt.</p>
+        <div class="proj-stack">
+          <span>Cloudflare</span><span>Vault</span><span>mTLS</span>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-meta">
+          <span class="proj-tag">Automation</span>
+          <span class="proj-year">2025</span>
+        </div>
+        <div class="proj-img">⚙️</div>
+        <h3>Invoice Processing Pipeline</h3>
+        <p>Automated end-to-end invoice intake, validation, and ERP sync for a logistics company — eliminating 2,000+ manual entries per month.</p>
+        <div class="proj-stack">
+          <span>OCR</span><span>n8n</span><span>SAP</span>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-meta">
+          <span class="proj-tag">Data / BI</span>
+          <span class="proj-year">2025</span>
+        </div>
+        <div class="proj-img">📊</div>
+        <h3>Real-Time Analytics Dashboard</h3>
+        <p>Streaming data pipeline ingesting 50M events/day, powering a live operations dashboard used by 300+ analysts across 5 countries.</p>
+        <div class="proj-stack">
+          <span>Kafka</span><span>ClickHouse</span><span>Grafana</span>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-meta">
+          <span class="proj-tag">Engineering</span>
+          <span class="proj-year">2025</span>
+        </div>
+        <div class="proj-img">🌐</div>
+        <h3>API Gateway Platform</h3>
+        <p>Designed a unified API gateway for a SaaS company serving 80+ enterprise clients — with rate limiting, auth, versioning, and an auto-generated developer portal.</p>
+        <div class="proj-stack">
+          <span>Kong</span><span>Node.js</span><span>PostgreSQL</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ADD PROJECT MODAL -->
+<div id="add-project-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:800;backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:520px;margin:20px;position:relative;max-height:90vh;overflow-y:auto;">
+    <button onclick="closeAddProjectModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;">✕</button>
+    <div style="font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--glow);margin-bottom:6px;">// Portfolio</div>
+    <h3 style="font-size:20px;font-weight:700;color:var(--txt);margin-bottom:24px;letter-spacing:-.02em;">Add New Project</h3>
+
+    <!-- Image Upload -->
+    <div style="margin-bottom:18px;">
+      <label style="font-size:12px;font-weight:500;color:var(--dim);letter-spacing:.06em;display:block;margin-bottom:8px;">PROJECT IMAGE</label>
+      <div id="img-upload-zone" onclick="document.getElementById('proj-img-input').click()" style="border:1.5px dashed rgba(59,130,246,.3);border-radius:8px;padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .2s;background:rgba(37,99,235,.04);">
+        <div id="img-upload-preview" style="display:none;margin-bottom:12px;">
+          <img id="proj-img-preview" style="max-height:120px;max-width:100%;border-radius:6px;object-fit:cover;" />
+        </div>
+        <div id="img-upload-placeholder">
+          <div style="font-size:28px;margin-bottom:8px;">📷</div>
+          <div style="font-size:13px;color:var(--dim);font-weight:300;">Click to upload an image</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">PNG, JPG, GIF up to 5MB</div>
+        </div>
+        <input type="file" id="proj-img-input" accept="image/*" style="display:none;" onchange="handleProjectImageUpload(this)" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:var(--dim);letter-spacing:.06em;display:block;margin-bottom:6px;">PROJECT TITLE *</label>
+      <input id="proj-title" placeholder="e.g. AI Recommendation Engine" style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:7px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:10px 13px;outline:none;" />
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:500;color:var(--dim);letter-spacing:.06em;display:block;margin-bottom:6px;">DESCRIPTION *</label>
+      <textarea id="proj-desc" placeholder="What did you build? What problem did it solve?" rows="3" style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:7px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:10px 13px;outline:none;resize:vertical;"></textarea>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--dim);letter-spacing:.06em;display:block;margin-bottom:6px;">CATEGORY</label>
+        <select id="proj-tag" style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:7px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:10px 13px;outline:none;">
+          <option value="AI / ML">AI / ML</option>
+          <option value="Cloud / DevOps">Cloud / DevOps</option>
+          <option value="Security">Security</option>
+          <option value="Automation">Automation</option>
+          <option value="Data / BI">Data / BI</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--dim);letter-spacing:.06em;display:block;margin-bottom:6px;">YEAR</label>
+        <input id="proj-year" type="number" value="2025" min="2020" max="2030" style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:7px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:10px 13px;outline:none;" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <label style="font-size:12px;font-weight:500;color:var(--dim);letter-spacing:.06em;display:block;margin-bottom:6px;">TECH STACK (comma separated)</label>
+      <input id="proj-stack" placeholder="e.g. Python, TensorFlow, FastAPI" style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:7px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:10px 13px;outline:none;" />
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeAddProjectModal()" style="flex:1;background:none;border:1px solid var(--border);color:var(--dim);font-size:13.5px;font-weight:500;padding:11px;border-radius:7px;cursor:pointer;font-family:var(--sans);">Cancel</button>
+      <button onclick="submitNewProject()" style="flex:2;background:var(--blue-v);border:none;color:#fff;font-size:13.5px;font-weight:500;padding:11px;border-radius:7px;cursor:pointer;font-family:var(--sans);">Add to Portfolio →</button>
+    </div>
+    <div id="proj-modal-status" style="font-size:12px;color:var(--dim);margin-top:10px;text-align:center;"></div>
+  </div>
+</div>
+
+
+
+
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-label">// Process</div>
+      <h2 class="sec-title">How we <span class="accent">work</span></h2>
+    </div>
+    <div class="process reveal">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Discovery</h3>
+        <p>We start by deeply understanding your goals, constraints, and technical environment before writing a single line of code.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Architecture</h3>
+        <p>Designing systems with long-term scale in mind — the right tools, the right structure, zero unnecessary complexity.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Build & Iterate</h3>
+        <p>Rapid iteration with continuous feedback. You see progress early and influence direction throughout the build cycle.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <h3>Deploy & Support</h3>
+        <p>Full deployment, documentation, and ongoing technical support so your system stays healthy well after launch.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- TEAM -->
+<section class="sec" id="team">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-label">// Founders</div>
+      <h2 class="sec-title">The people <span class="accent">behind AMR</span></h2>
+    </div>
+    <div class="team-grid reveal">
+      <div class="founder">
+        <div class="f-mono">FOUNDER</div>
+        <div class="f-avatar">AS</div>
+        <div class="f-name">Arvin Shamloo</div>
+        <div class="f-title">CO-FOUNDER &amp; CEO</div>
+        <div class="f-div"></div>
+        <p class="f-desc">Leads strategy and AI product direction. Focused on bridging the gap between cutting-edge research and real-world applications.</p>
+      </div>
+      <div class="founder">
+        <div class="f-mono">FOUNDER</div>
+        <div class="f-avatar">MH</div>
+        <div class="f-name">Mohammad Reza Heidari</div>
+        <div class="f-title">CO-FOUNDER &amp; CTO</div>
+        <div class="f-div"></div>
+        <p class="f-desc">Architect of distributed systems and cloud infrastructure. Responsible for the technical backbone of every project AMR ships.</p>
+      </div>
+      <div class="founder">
+        <div class="f-mono">FOUNDER</div>
+        <div class="f-avatar">MM</div>
+        <div class="f-name">Mahan Malekjari</div>
+        <div class="f-title">CO-FOUNDER &amp; COO</div>
+        <div class="f-div"></div>
+        <p class="f-desc">Drives operations and business development. Specializes in automation architecture and seamless systems integration.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- CAPABILITIES -->
+<section class="sec">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-label">// Stack</div>
+      <h2 class="sec-title">Built on a <span class="accent">solid foundation</span></h2>
+    </div>
+    <div class="caps reveal">
+      <div class="cap">
+        <div class="cap-icon">🧠</div>
+        <div>
+          <h3>Large Language Models</h3>
+          <p>Deploying, fine-tuning, and orchestrating LLMs for production use-cases — RAG, agents, and domain-specific reasoning.</p>
+        </div>
+      </div>
+      <div class="cap">
+        <div class="cap-icon">🔗</div>
+        <div>
+          <h3>API-First Design</h3>
+          <p>Every system we build is designed around clean, documented APIs so your stack stays flexible and extensible.</p>
+        </div>
+      </div>
+      <div class="cap">
+        <div class="cap-icon">📦</div>
+        <div>
+          <h3>Containerized Deployments</h3>
+          <p>Docker, Kubernetes, and CI/CD pipelines that make shipping fast and rollbacks painless.</p>
+        </div>
+      </div>
+      <div class="cap">
+        <div class="cap-icon">🛡️</div>
+        <div>
+          <h3>Security by Default</h3>
+          <p>Security is not a feature we add at the end — it's embedded in every layer of the architecture from day one.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-box wrap">
+    <div class="cta-glow"></div>
+    <div>
+      <h2 class="cta-heading">Ready to start<br>something?</h2>
+      <p class="cta-sub">Tell us about your project — we'll take it from there.</p>
+    </div>
+    <div class="cta-actions">
+      <a href="mailto:arvin139143@gmail.com" class="btn-lg primary">Get in touch →</a>
+      <a href="#services" class="btn-lg outline">View services</a>
+    </div>
+
+    <div id="quote-form" style="margin-top:40px;max-width:560px;width:100%;text-align:left;">
+      <div style="font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:14px;">
+        Or send us a quick brief
+      </div>
+      <textarea id="quote-desc" placeholder="Describe your project — goals, scope, timeline…" rows="4"
+        style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:10px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:12px 14px;outline:none;resize:vertical;margin-bottom:12px;"></textarea>
+      <select id="quote-budget"
+        style="width:100%;background:var(--layer);border:1px solid var(--border);border-radius:10px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:12px 14px;outline:none;margin-bottom:14px;">
+        <option value="" disabled selected>Estimated budget</option>
+        <option value="Under $5,000">Under $5,000</option>
+        <option value="$5,000 – $15,000">$5,000 – $15,000</option>
+        <option value="$15,000 – $50,000">$15,000 – $50,000</option>
+        <option value="$50,000 – $150,000">$50,000 – $150,000</option>
+        <option value="$150,000+">$150,000+</option>
+        <option value="Not sure yet">Not sure yet</option>
+      </select>
+      <button id="quote-submit" class="btn-lg primary" style="width:100%;justify-content:center;">Send project brief →</button>
+      <div id="quote-status" style="font-size:12px;color:var(--dim);margin-top:10px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-logo">A<em>M</em>R</span>
+    <div class="footer-mid">
+      <a href="#services">Services</a>
+      <a href="#how">Process</a>
+      <a href="#team">Team</a>
+      <a href="mailto:arvin139143@gmail.com">Contact</a>
+    </div>
+    <span class="footer-copy">© 2025 AMR. All rights reserved.</span>
+  </div>
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-modal" id="auth-modal">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div class="auth-logo">A<em>M</em>R</div>
+    <div class="auth-title" id="auth-title">Welcome back</div>
+    <p class="auth-sub" id="auth-sub">Sign in to your AMR account to access your dashboard and projects.</p>
+
+    <!-- Google Sign In -->
+    <button class="btn-google" onclick="handleGoogleAuth()">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="auth-divider"><span>OR</span></div>
+
+    <div id="auth-fields">
+      <div class="auth-field" id="name-field" style="display:none">
+        <label>Full Name</label>
+        <input type="text" id="auth-name" placeholder="Your name"/>
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com"/>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn-auth-submit" onclick="handleEmailAuth()" id="auth-submit-btn">Sign in</button>
+    </div>
+
+    <div class="auth-switch" id="auth-switch">
+      Don't have an account? <button onclick="toggleAuthMode()">Create one</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEV PASSWORD OVERLAY -->
+<div id="dev-pw-overlay">
+  <div id="dev-pw-box">
+    <span class="dev-pw-label">// DEVELOPER ACCESS</span>
+    <div class="dev-pw-title">Developer Console</div>
+    <p class="dev-pw-sub">این پنل فقط برای توسعه‌دهندگان AMR است. رمز عبور خود را وارد کنید.</p>
+    <input type="password" id="dev-pw-input" placeholder="Enter developer password" autocomplete="off"/>
+    <div id="dev-pw-error"></div>
+    <button id="dev-pw-submit" onclick="checkDevPw()">AUTHENTICATE →</button>
+    <button id="dev-pw-cancel" onclick="closeDevPw()">Cancel</button>
+  </div>
+</div>
+
+<!-- DEV DASHBOARD PANEL -->
+<div id="dev-dashboard">
+  <div class="dev-dash-header">
+    <div class="dev-dash-title">
+      <span class="d-logo">A<em>M</em>R</span>
+      <span class="d-tag">DEV CONSOLE</span>
+    </div>
+    <div class="dev-dash-actions">
+      <span class="dev-time" id="dev-clock">--:--:--</span>
+      <button id="dev-close-btn" onclick="closeDevDash()">✕ CLOSE</button>
+    </div>
+  </div>
+
+  <div class="dev-dash-body">
+
+    <!-- JSONBIN SETUP -->
+    <div id="jsonbin-setup-box" style="background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.2);border-radius:10px;padding:20px 24px;margin-bottom:28px;">
+      <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--cyan);margin-bottom:10px;">// JSONBIN SETUP — یکبار وارد کن، ذخیره میشه</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="password" id="jb-master-key" placeholder="Master Key از jsonbin.io" style="flex:1;min-width:200px;background:rgba(0,0,0,.3);border:1px solid rgba(34,211,238,.2);border-radius:6px;padding:9px 12px;color:var(--txt);font-family:var(--mono);font-size:12px;outline:none;"/>
+        <button onclick="saveJBKey()" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:9px 18px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;white-space:nowrap;">ذخیره و اتصال →</button>
+      </div>
+      <div id="jb-status" style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:8px;"></div>
+    </div>
+
+    <!-- DYNAMIC OUTPUT PANEL — همه‌ی پنل‌های مدیریتی اینجا رندر میشن -->
+    <div id="dev-output-panel" style="display:none;background:rgba(8,13,24,.92);border:1px solid rgba(34,211,238,.18);border-radius:10px;padding:20px 22px;margin-bottom:28px;"></div>
+
+    <!-- STATS -->
+    <div class="dev-section-label">// آمار لحظه‌ای</div>
+    <div class="dev-stats">
+      <div class="dev-stat">
+        <div class="ds-val" id="stat-total-users"><em>—</em></div>
+        <div class="ds-label">TOTAL USERS</div>
+      </div>
+      <div class="dev-stat">
+        <div class="ds-val" id="stat-online"><em>—</em></div>
+        <div class="ds-label">ONLINE NOW</div>
+      </div>
+      <div class="dev-stat">
+        <div class="ds-val" id="stat-new-today"><em>—</em></div>
+        <div class="ds-label">NEW TODAY</div>
+      </div>
+      <div class="dev-stat">
+        <div class="ds-val" id="stat-ai-req"><em>—</em></div>
+        <div class="ds-label">AI REQUESTS</div>
+      </div>
+      <div class="dev-stat">
+        <div class="ds-val" id="stat-tickets"><em>—</em></div>
+        <div class="ds-label">OPEN TICKETS</div>
+      </div>
+      <div class="dev-stat">
+        <div class="ds-val" id="stat-uptime"><em>—</em></div>
+        <div class="ds-label">UPTIME</div>
+      </div>
+    </div>
+
+    <!-- SERVER STATUS -->
+    <div class="dev-section-label">// وضعیت سرویس‌ها</div>
+    <div class="server-status-bar">
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">API Gateway</span><span class="srv-ping">12ms</span></div>
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">Database</span><span class="srv-ping">4ms</span></div>
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">AI Engine</span><span class="srv-ping">89ms</span></div>
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">Auth Service</span><span class="srv-ping">8ms</span></div>
+      <div class="srv-item"><span class="srv-dot yellow"></span><span class="srv-name">Storage CDN</span><span class="srv-ping">220ms</span></div>
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">Email Queue</span><span class="srv-ping">15ms</span></div>
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">Search Index</span><span class="srv-ping">31ms</span></div>
+      <div class="srv-item"><span class="srv-dot green"></span><span class="srv-name">WebSocket</span><span class="srv-ping">3ms</span></div>
+    </div>
+
+    <!-- USER MANAGEMENT -->
+    <div class="dev-section-label">// مدیریت کاربران</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('مدیریت کاربران')"><span class="dc-icon">👥</span><div class="dc-text"><div class="dc-name">مدیریت کاربران</div><div class="dc-desc">users.list</div></div></div>
+      <div class="dev-card" onclick="devAction('مسدود کردن کاربر')"><span class="dc-icon">🚫</span><div class="dc-text"><div class="dc-name">مسدود کردن کاربر</div><div class="dc-desc">users.ban</div></div></div>
+      <div class="dev-card" onclick="devAction('حذف کاربر')"><span class="dc-icon">🗑️</span><div class="dc-text"><div class="dc-name">حذف کاربر</div><div class="dc-desc">users.delete</div></div></div>
+      <div class="dev-card" onclick="devAction('فعالیت کاربران')"><span class="dc-icon">📋</span><div class="dc-text"><div class="dc-name">فعالیت کاربران</div><div class="dc-desc">users.activity</div></div></div>
+      <div class="dev-card" onclick="devAction('تعیین نقش اعضا')"><span class="dc-icon">🎭</span><div class="dc-text"><div class="dc-name">تعیین نقش اعضا</div><div class="dc-desc">roles.assign</div></div></div>
+      <div class="dev-card" onclick="devAction('سطح دسترسی‌ها')"><span class="dc-icon">🔑</span><div class="dc-text"><div class="dc-name">سطح دسترسی‌ها</div><div class="dc-desc">permissions.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت ادمین‌ها')"><span class="dc-icon">👑</span><div class="dc-text"><div class="dc-name">مدیریت ادمین‌ها</div><div class="dc-desc">admin.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت اعضای AMR')"><span class="dc-icon">🏢</span><div class="dc-text"><div class="dc-name">مدیریت اعضای AMR</div><div class="dc-desc">team.manage</div></div></div>
+    </div>
+
+    <!-- ADD USER FORM -->
+    <div style="background:rgba(8,13,24,.8);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:18px 20px;margin-top:8px;">
+      <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:var(--muted);margin-bottom:14px;">// افزودن کاربر جدید</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="new-user-name" placeholder="نام" style="flex:1;min-width:120px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--txt);font-family:var(--sans);font-size:12px;outline:none;"/>
+        <input type="email" id="new-user-email" placeholder="ایمیل" style="flex:2;min-width:180px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--txt);font-family:var(--sans);font-size:12px;outline:none;"/>
+        <select id="new-user-role" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--txt);font-family:var(--mono);font-size:11px;outline:none;">
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+          <option value="developer">developer</option>
+          <option value="client">client</option>
+        </select>
+        <button onclick="addUser(document.getElementById('new-user-name').value.trim(), document.getElementById('new-user-email').value.trim(), document.getElementById('new-user-role').value)" style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;white-space:nowrap;">+ اضافه کن</button>
+      </div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div id="users-table-container" style="background:rgba(8,13,24,.8);border:1px solid rgba(255,255,255,.05);border-radius:8px;margin-top:8px;overflow:hidden;min-height:60px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:16px 20px;">برای دیدن کاربران، JSONBin را وصل کن و روی "مدیریت کاربران" کلیک کن</div>
+    </div>
+
+    <!-- PROJECT MANAGEMENT -->
+    <div class="dev-section-label">// مدیریت پروژه‌ها</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('آپلود پروژه')"><span class="dc-icon">📤</span><div class="dc-text"><div class="dc-name">آپلود پروژه</div><div class="dc-desc">projects.upload</div></div></div>
+      <div class="dev-card" onclick="devAction('ویرایش پروژه')"><span class="dc-icon">✏️</span><div class="dc-text"><div class="dc-name">ویرایش پروژه</div><div class="dc-desc">projects.edit</div></div></div>
+      <div class="dev-card" onclick="devAction('حذف پروژه')"><span class="dc-icon">🗂️</span><div class="dc-text"><div class="dc-name">حذف پروژه</div><div class="dc-desc">projects.delete</div></div></div>
+      <div class="dev-card" onclick="devAction('وضعیت پروژه‌ها')"><span class="dc-icon">📊</span><div class="dc-text"><div class="dc-name">وضعیت پروژه‌ها</div><div class="dc-desc">projects.status</div></div></div>
+      <div class="dev-card" onclick="devAction('پروژه‌های ویژه')"><span class="dc-icon">⭐</span><div class="dc-text"><div class="dc-name">پروژه‌های ویژه</div><div class="dc-desc">projects.featured</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت نمونه‌کارها')"><span class="dc-icon">🎨</span><div class="dc-text"><div class="dc-name">مدیریت نمونه‌کارها</div><div class="dc-desc">portfolio.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('نقشه راه پروژه')"><span class="dc-icon">🗺️</span><div class="dc-text"><div class="dc-name">نقشه راه پروژه</div><div class="dc-desc">roadmap.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت نسخه‌ها')"><span class="dc-icon">🔖</span><div class="dc-text"><div class="dc-name">مدیریت نسخه‌ها</div><div class="dc-desc">versions.manage</div></div></div>
+    </div>
+
+    <!-- AI MANAGEMENT -->
+    <div class="dev-section-label">// مدیریت هوش مصنوعی</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('درخواست‌های AI')"><span class="dc-icon">🤖</span><div class="dc-text"><div class="dc-name">درخواست‌های AI</div><div class="dc-desc">ai.requests.count</div></div></div>
+      <div class="dev-card" onclick="devAction('لاگ خطاهای AI')"><span class="dc-icon">⚠️</span><div class="dc-text"><div class="dc-name">لاگ خطاهای AI</div><div class="dc-desc">ai.errors.log</div></div></div>
+      <div class="dev-card" onclick="devAction('تنظیمات AI')"><span class="dc-icon">⚙️</span><div class="dc-text"><div class="dc-name">تنظیمات AI</div><div class="dc-desc">ai.settings</div></div></div>
+      <div class="dev-card" onclick="devAction('کنترل چت AI')"><span class="dc-icon">💬</span><div class="dc-text"><div class="dc-name">کنترل چت AI</div><div class="dc-desc">ai.chat.control</div></div></div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="dev-section-label">// مرکز امنیت</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('لاگ ورود کاربران')"><span class="dc-icon">🔐</span><div class="dc-text"><div class="dc-name">لاگ ورود کاربران</div><div class="dc-desc">security.login.log</div></div></div>
+      <div class="dev-card" onclick="devAction('تلاش‌های ناموفق ورود')"><span class="dc-icon">🛡️</span><div class="dc-text"><div class="dc-name">تلاش‌های ناموفق</div><div class="dc-desc">security.failed.attempts</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت API Keys')"><span class="dc-icon">🔑</span><div class="dc-text"><div class="dc-name">مدیریت API Keys</div><div class="dc-desc">api.keys.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت ایمیل‌ها')"><span class="dc-icon">📧</span><div class="dc-text"><div class="dc-name">مدیریت ایمیل‌ها</div><div class="dc-desc">email.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('اتصال وبهوک و Discord')"><span class="dc-icon">🔗</span><div class="dc-text"><div class="dc-name">Discord & Webhook</div><div class="dc-desc">integrations.manage</div></div></div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="dev-section-label">// مدیریت محتوا</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('مدیریت اخبار')"><span class="dc-icon">📰</span><div class="dc-text"><div class="dc-name">مدیریت اخبار</div><div class="dc-desc">news.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت وبلاگ')"><span class="dc-icon">✍️</span><div class="dc-text"><div class="dc-name">مدیریت وبلاگ</div><div class="dc-desc">blog.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('پیام‌های تماس')"><span class="dc-icon">📩</span><div class="dc-text"><div class="dc-name">پیام‌های تماس</div><div class="dc-desc">contact.messages</div></div></div>
+      <div class="dev-card" onclick="devAction('تیکت‌های پشتیبانی')"><span class="dc-icon">🎫</span><div class="dc-text"><div class="dc-name">تیکت‌های پشتیبانی</div><div class="dc-desc">tickets.list</div></div></div>
+      <div class="dev-card" onclick="devAction('پاسخ به تیکت‌ها')"><span class="dc-icon">💬</span><div class="dc-text"><div class="dc-name">پاسخ به تیکت‌ها</div><div class="dc-desc">tickets.reply</div></div></div>
+      <div class="dev-card" onclick="devAction('کتابخانه رسانه')"><span class="dc-icon">🖼️</span><div class="dc-text"><div class="dc-name">کتابخانه رسانه</div><div class="dc-desc">media.library</div></div></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="dev-section-label">// آمار و تحلیل</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('آمار کاربران')"><span class="dc-icon">📉</span><div class="dc-text"><div class="dc-name">آمار کاربران</div><div class="dc-desc">analytics.users</div></div></div>
+      <div class="dev-card" onclick="devAction('گزارش خطاها')"><span class="dc-icon">🐛</span><div class="dc-text"><div class="dc-name">گزارش خطاها</div><div class="dc-desc">errors.report</div></div></div>
+    </div>
+
+    <!-- BUSINESS -->
+    <div class="dev-section-label">// مدیریت کسب‌وکار</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('مدیریت مشتریان')"><span class="dc-icon">🤝</span><div class="dc-text"><div class="dc-name">مدیریت مشتریان</div><div class="dc-desc">clients.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت سفارش‌ها')"><span class="dc-icon">📦</span><div class="dc-text"><div class="dc-name">مدیریت سفارش‌ها</div><div class="dc-desc">orders.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت استخدام')"><span class="dc-icon">👔</span><div class="dc-text"><div class="dc-name">مدیریت استخدام</div><div class="dc-desc">hr.hiring</div></div></div>
+      <div class="dev-card" onclick="devAction('درخواست همکاری')"><span class="dc-icon">📝</span><div class="dc-text"><div class="dc-name">درخواست همکاری</div><div class="dc-desc">hr.applications</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت بازخورد')"><span class="dc-icon">⭐</span><div class="dc-text"><div class="dc-name">مدیریت بازخورد</div><div class="dc-desc">feedback.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('درخواست قابلیت جدید')"><span class="dc-icon">💡</span><div class="dc-text"><div class="dc-name">درخواست قابلیت</div><div class="dc-desc">features.requests</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت تست‌کنندگان بتا')"><span class="dc-icon">🧪</span><div class="dc-text"><div class="dc-name">بتا تسترها</div><div class="dc-desc">beta.testers</div></div></div>
+    </div>
+
+    <!-- INFRASTRUCTURE -->
+    <div class="dev-section-label">// زیرساخت و سیستم</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('سیستم بکاپ')"><span class="dc-icon">💾</span><div class="dc-text"><div class="dc-name">سیستم بکاپ</div><div class="dc-desc">system.backup</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت دیتابیس')"><span class="dc-icon">🗄️</span><div class="dc-text"><div class="dc-name">مدیریت دیتابیس</div><div class="dc-desc">db.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('مدیریت فایل‌ها')"><span class="dc-icon">📁</span><div class="dc-text"><div class="dc-name">مدیریت فایل‌ها</div><div class="dc-desc">files.manage</div></div></div>
+      <div class="dev-card" onclick="devAction('خروجی داده')"><span class="dc-icon">📤</span><div class="dc-text"><div class="dc-name">خروجی داده</div><div class="dc-desc">data.export</div></div></div>
+      <div class="dev-card" onclick="devAction('ورود داده')"><span class="dc-icon">📥</span><div class="dc-text"><div class="dc-name">ورود داده</div><div class="dc-desc">data.import</div></div></div>
+      <div class="dev-card" onclick="devAction('لاگ مدیریتی')"><span class="dc-icon">📜</span><div class="dc-text"><div class="dc-name">لاگ مدیریتی</div><div class="dc-desc">admin.logs</div></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="dev-section-label">// تنظیمات سایت</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('تنظیمات سایت')"><span class="dc-icon">⚙️</span><div class="dc-text"><div class="dc-name">تنظیمات سایت</div><div class="dc-desc">site.settings</div></div></div>
+      <div class="dev-card" onclick="devAction('تنظیمات قالب')"><span class="dc-icon">🎨</span><div class="dc-text"><div class="dc-name">تنظیمات قالب</div><div class="dc-desc">theme.settings</div></div></div>
+      <div class="dev-card" onclick="devAction('تنظیمات SEO')"><span class="dc-icon">🔍</span><div class="dc-text"><div class="dc-name">تنظیمات SEO</div><div class="dc-desc">seo.settings</div></div></div>
+      <div class="dev-card" onclick="devAction('مرکز اعلان‌ها')"><span class="dc-icon">🔔</span><div class="dc-text"><div class="dc-name">مرکز اعلان‌ها</div><div class="dc-desc">notifications.center</div></div></div>
+      <div class="dev-card" onclick="devAction('چت تیمی')"><span class="dc-icon">💬</span><div class="dc-text"><div class="dc-name">چت تیمی</div><div class="dc-desc">team.chat</div></div></div>
+      <div class="dev-card" onclick="devAction('تاریخچه فعالیت‌ها')"><span class="dc-icon">🕐</span><div class="dc-text"><div class="dc-name">تاریخچه فعالیت‌ها</div><div class="dc-desc">activity.history</div></div></div>
+      <div class="dev-card" onclick="devAction('لیست تغییرات')"><span class="dc-icon">📋</span><div class="dc-text"><div class="dc-name">لیست تغییرات</div><div class="dc-desc">changelog.list</div></div></div>
+    </div>
+
+    <!-- DASHBOARDS -->
+    <div class="dev-section-label">// پنل‌های مدیریتی</div>
+    <div class="dev-grid">
+      <div class="dev-card" onclick="devAction('مرکز کنترل AMR')"><span class="dc-icon">🎛️</span><div class="dc-text"><div class="dc-name">مرکز کنترل AMR</div><div class="dc-desc">amr.control.center</div></div></div>
+      <div class="dev-card" onclick="devAction('جستجوی سراسری')"><span class="dc-icon">🔎</span><div class="dc-text"><div class="dc-name">جستجوی سراسری</div><div class="dc-desc">search.global</div></div></div>
+    </div>
+
+    <!-- FEATURE TOGGLES -->
+    <div class="dev-section-label">// Feature Toggles — روشن/خاموش قابلیت‌ها</div>
+    <div class="dev-grid" id="feature-toggles">
+      <div class="dev-card active-toggle" id="ft-ai-chat">
+        <span class="dc-icon">🤖</span>
+        <div class="dc-text">
+          <div class="dc-name">چت AI</div>
+          <div class="dc-desc">ai.chat.enabled</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked onchange="toggleFeature('ai-chat', this)"><span class="toggle-track"></span></label>
+      </div>
+      <div class="dev-card active-toggle" id="ft-maintenance">
+        <span class="dc-icon">🔧</span>
+        <div class="dc-text">
+          <div class="dc-name">حالت تعمیرات</div>
+          <div class="dc-desc">site.maintenance</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" onchange="toggleFeature('maintenance', this)"><span class="toggle-track"></span></label>
+      </div>
+      <div class="dev-card active-toggle" id="ft-new-users">
+        <span class="dc-icon">👤</span>
+        <div class="dc-text">
+          <div class="dc-name">ثبت‌نام کاربر جدید</div>
+          <div class="dc-desc">users.registration</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked onchange="toggleFeature('new-users', this)"><span class="toggle-track"></span></label>
+      </div>
+      <div class="dev-card active-toggle" id="ft-dark-mode">
+        <span class="dc-icon">🌙</span>
+        <div class="dc-text">
+          <div class="dc-name">حالت تاریک</div>
+          <div class="dc-desc">theme.dark</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked onchange="toggleFeature('dark-mode', this)"><span class="toggle-track"></span></label>
+      </div>
+      <div class="dev-card" id="ft-beta">
+        <span class="dc-icon">🧪</span>
+        <div class="dc-text">
+          <div class="dc-name">ویژگی‌های بتا</div>
+          <div class="dc-desc">features.beta</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" onchange="toggleFeature('beta', this)"><span class="toggle-track"></span></label>
+      </div>
+      <div class="dev-card active-toggle" id="ft-notifications">
+        <span class="dc-icon">🔔</span>
+        <div class="dc-text">
+          <div class="dc-name">اعلان‌ها</div>
+          <div class="dc-desc">notifications.enabled</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" checked onchange="toggleFeature('notifications', this)"><span class="toggle-track"></span></label>
+      </div>
+      <div class="dev-card" id="ft-debug">
+        <span class="dc-icon">🐞</span>
+        <div class="dc-text">
+          <div class="dc-name">حالت Debug</div>
+          <div class="dc-desc">debug.mode</div>
+        </div>
+        <label class="toggle-switch"><input type="checkbox" onchange="toggleFeature('debug', this)"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <!-- DEV AI CONSOLE -->
+    <div class="dev-section-label">// کنسول توسعه‌دهنده — AI Assistant</div>
+    <div id="dev-ai-console">
+      <div class="dac-header">
+        <span class="dev-dot"></span>
+        <strong>DEV AI</strong>
+        <span>claude-sonnet-4-6 · DEVELOPER MODE</span>
+      </div>
+      <div id="dac-messages">
+        <div class="dm ai">سلام! من دستیار هوش مصنوعی پنل توسعه‌دهندگان AMR هستم. می‌تونم در موارد فنی، دیباگ، تحلیل سیستم، و مشاوره توسعه کمک کنم. چه سوالی داری؟</div>
+      </div>
+      <div class="dac-input-row">
+        <input type="text" id="dac-input" placeholder="سوال فنی بپرس... (Enter برای ارسال)" onkeydown="if(event.key==='Enter') dacSend()"/>
+        <button id="dac-send" onclick="dacSend()">SEND →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- AI SUPPORT CHAT WIDGET -->
+<button id="ai-chat-btn" aria-label="Open AI support chat">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C6.48 2 2 6.03 2 11c0 2.55 1.12 4.84 2.92 6.45L4 22l4.89-1.63C10.16 20.77 11.07 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2zm1 14H7v-2h6v2zm2-4H7V10h8v2zm0-4H7V6h8v2z"/>
+  </svg>
+</button>
+
+<div id="ai-chat-panel" role="dialog" aria-label="AMR AI Support">
+  <div class="chat-header">
+    <div class="chat-header-dot"></div>
+    <div class="chat-header-text">
+      <strong>AMR Assistant</strong>
+      <span>AI · ONLINE</span>
+    </div>
+    <button class="chat-close" id="chat-close-btn" aria-label="Close chat">✕</button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="msg ai">
+      Hi! I'm AMR's AI assistant. I can help you with information about our services, products, and how we work. What can I help you with?
+    </div>
+  </div>
+
+  <div class="chat-suggestions" id="chat-suggestions">
+    <button class="chat-suggestion">What services do you offer?</button>
+    <button class="chat-suggestion">Tell me about your products</button>
+    <button class="chat-suggestion">How do I get started?</button>
+    <button class="chat-suggestion">Who are the founders?</button>
+  </div>
+
+  <div class="chat-input-row">
+    <textarea id="chat-input" placeholder="Ask anything about AMR…" rows="1"></textarea>
+    <button id="chat-send" aria-label="Send message">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  document.getElementById('add-project-btn')?.addEventListener('mouseenter', function() {
+    this.style.background = 'rgba(37,99,235,.22)';
+    this.style.borderColor = 'rgba(37,99,235,.5)';
+    this.style.color = '#fff';
+  });
+  document.getElementById('add-project-btn')?.addEventListener('mouseleave', function() {
+    this.style.background = 'rgba(37,99,235,.12)';
+    this.style.borderColor = 'rgba(37,99,235,.28)';
+    this.style.color = 'var(--pale)';
+  });
+
+  // ── Scroll reveal ──
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.04) + 's';
+    io.observe(el);
+  });
+
+  // Stagger children on grid reveal
+  const gridIo = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.svc,.step,.founder,.cap,.prod-card,.proj-card').forEach((child, i) => {
+          child.style.opacity = '0';
+          child.style.transform = 'translateY(20px)';
+          child.style.transition = `opacity .55s ${i * 0.07}s ease, transform .55s ${i * 0.07}s ease, background .3s, border-color .3s`;
+          requestAnimationFrame(() => {
+            child.style.opacity = '1';
+            child.style.transform = 'translateY(0)';
+          });
+        });
+        gridIo.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.services-grid,.process,.team-grid,.caps,.products-grid,.projects-grid').forEach(g => gridIo.observe(g));
+
+  // ── AUTH MODAL ──
+  let authMode = 'login'; // 'login' | 'signup'
+  let currentUser = null;
+
+  // Simulate session persistence with localStorage
+  try {
+    const saved = localStorage.getItem('amr_user');
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      updateNavForUser(currentUser);
+    }
+  } catch(e){}
+
+  function openAuth(mode) {
+    authMode = mode || 'login';
+    setAuthMode(authMode);
+    document.getElementById('auth-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('auth-email').focus(), 100);
+  }
+
+  function closeAuth() {
+    document.getElementById('auth-overlay').classList.remove('open');
+  }
+
+  function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    setAuthMode(authMode);
+  }
+
+  function setAuthMode(mode) {
+    const title = document.getElementById('auth-title');
+    const sub = document.getElementById('auth-sub');
+    const nameField = document.getElementById('name-field');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const switchEl = document.getElementById('auth-switch');
+    if (mode === 'signup') {
+      title.textContent = 'Create your account';
+      sub.textContent = 'Join AMR to track your projects and collaborate with our team.';
+      nameField.style.display = 'block';
+      submitBtn.textContent = 'Create account';
+      switchEl.innerHTML = 'Already have an account? <button onclick="toggleAuthMode()">Sign in</button>';
+    } else {
+      title.textContent = 'Welcome back';
+      sub.textContent = 'Sign in to your AMR account to access your dashboard and projects.';
+      nameField.style.display = 'none';
+      submitBtn.textContent = 'Sign in';
+      switchEl.innerHTML = "Don't have an account? <button onclick=\"toggleAuthMode()\">Create one</button>";
+    }
+  }
+
+  // Close modal on overlay click
+  document.getElementById('auth-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeAuth();
+  });
+
+  function handleGoogleAuth() {
+    if (!window.__fbSignInWithGoogle) {
+      showToast('Firebase not configured. Add your Firebase config to enable Google Sign-In.', true);
+      return;
+    }
+    window.__fbSignInWithGoogle()
+      .then(result => {
+        const user = result.user;
+        const displayName = user.displayName || user.email.split('@')[0];
+        const initials = displayName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        const u = { name: displayName, email: user.email, avatar: initials, provider: 'google', photo: user.photoURL };
+        signIn(u);
+        closeAuth();
+        showToast('Signed in with Google ✓');
+      })
+      .catch(err => {
+        if (err.code !== 'auth/popup-closed-by-user') {
+          showToast('Google sign-in failed. Please try again.', true);
+        }
+      });
+  }
+
+  function handleEmailAuth() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value.trim();
+
+    if (!email || !password) { showToast('Please fill in all fields.', true); return; }
+    if (authMode === 'signup' && !name) { showToast('Please enter your name.', true); return; }
+
+    const displayName = authMode === 'signup' ? name : (email.split('@')[0]);
+    const initials = displayName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const user = { name: displayName, email, avatar: initials, provider: 'email' };
+    signIn(user);
+    closeAuth();
+    showToast(authMode === 'signup' ? 'Account created ✓' : 'Signed in ✓');
+  }
+
+  function signIn(user) {
+    currentUser = user;
+    try { localStorage.setItem('amr_user', JSON.stringify(user)); } catch(e){}
+    updateNavForUser(user);
+    logSecurityEvent('loginLogs', { who: user.email || user.name, result: 'success', provider: user.provider || 'email' });
+  }
+
+  function signOut() {
+    if (window.__fbSignOut) window.__fbSignOut().catch(() => {});
+    if (currentUser) logSecurityEvent('loginLogs', { who: currentUser.email || currentUser.name, result: 'signout' });
+    currentUser = null;
+    try { localStorage.removeItem('amr_user'); } catch(e){}
+    const navRight = document.getElementById('nav-right');
+    navRight.innerHTML = `
+      <button onclick="openAuth('login')" class="btn-nav ghost">Log in</button>
+      <button onclick="openAuth('signup')" class="btn-nav solid">Get started</button>
+    `;
+    showToast('Signed out.');
+  }
+
+  function updateNavForUser(user) {
+    const navRight = document.getElementById('nav-right');
+    navRight.innerHTML = `
+      <span style="font-size:12px;color:var(--dim);font-family:var(--mono)">Hi, ${user.name.split(' ')[0]}</span>
+      <button class="user-avatar-btn" title="${user.email}" onclick="signOut()" title="Click to sign out">${user.avatar}</button>
+    `;
+  }
+
+  // Toast notification
+  function showToast(msg, isError) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = `
+      position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+      background:${isError ? '#991b1b' : 'rgba(37,99,235,.9)'};
+      color:#fff;font-size:13px;font-family:var(--sans);font-weight:500;
+      padding:10px 22px;border-radius:40px;z-index:1000;
+      box-shadow:0 4px 20px rgba(0,0,0,.4);
+      animation:msgIn .2s ease;pointer-events:none;
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2800);
+  }
+
+  // ── QUOTE / PROJECT BRIEF FORM ──
+  const quoteDesc = document.getElementById('quote-desc');
+  const quoteBudget = document.getElementById('quote-budget');
+  const quoteSubmit = document.getElementById('quote-submit');
+  const quoteStatus = document.getElementById('quote-status');
+
+  quoteSubmit?.addEventListener('click', () => {
+    const desc = quoteDesc.value.trim();
+    const budget = quoteBudget.value;
+
+    if (!desc) {
+      quoteStatus.textContent = 'Please add a short description of your project first.';
+      quoteStatus.style.color = '#f87171';
+      quoteDesc.focus();
+      return;
+    }
+    if (!budget) {
+      quoteStatus.textContent = 'Please select an estimated budget.';
+      quoteStatus.style.color = '#f87171';
+      quoteBudget.focus();
+      return;
+    }
+
+    const subject = encodeURIComponent('New project brief via AMR website');
+    const body = encodeURIComponent(
+      `Project description:\n${desc}\n\nEstimated budget: ${budget}`
+    );
+    window.location.href = `mailto:arvin139143@gmail.com?subject=${subject}&body=${body}`;
+
+    quoteStatus.textContent = 'Opening your email client with the brief filled in…';
+    quoteStatus.style.color = 'var(--dim)';
+  });
+
+  // ── AI CHAT ──
+  // NOTE: Direct browser calls to api.anthropic.com are blocked by CORS.
+  // This chat works correctly when served from claude.ai as an artifact,
+  // or when deployed with a backend proxy. Here we use the Anthropic API
+  // via the artifact proxy mechanism.
+  const chatBtn = document.getElementById('ai-chat-btn');
+  const chatPanel = document.getElementById('ai-chat-panel');
+  const chatClose = document.getElementById('chat-close-btn');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const chatSend = document.getElementById('chat-send');
+  const suggestionsEl = document.getElementById('chat-suggestions');
+
+  chatBtn.addEventListener('click', () => {
+    chatPanel.classList.toggle('open');
+    if (chatPanel.classList.contains('open')) chatInput.focus();
+  });
+  chatClose.addEventListener('click', () => chatPanel.classList.remove('open'));
+
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 90) + 'px';
+  });
+
+  suggestionsEl.addEventListener('click', e => {
+    if (e.target.classList.contains('chat-suggestion')) {
+      sendMessage(e.target.textContent);
+    }
+  });
+
+  chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(chatInput.value.trim());
+    }
+  });
+  chatSend.addEventListener('click', () => sendMessage(chatInput.value.trim()));
+
+  const history = [];
+
+  const SYSTEM_PROMPT = `You are AMR's helpful AI assistant embedded on the AMR website. AMR is an AI & IT solutions company founded by Arvin Shamloo (CEO), Mohammad Reza Heidari (CTO), and Mahan Malekjari (COO).
+
+AMR's services include:
+1. Custom AI Systems – ML models, NLP pipelines, computer vision, predictive analytics
+2. Cloud Infrastructure – AWS, GCP, Azure architecture, performance & cost optimization
+3. Cybersecurity – vulnerability assessment, penetration testing, layered defense
+4. Data Engineering – pipelines, real-time dashboards, BI
+5. Process Automation – RPA and intelligent automation pipelines
+6. Software Development – full-stack, microservice, web/mobile/API-first
+
+AMR's products include:
+- AMR Insight: LLM-powered business intelligence, natural language data queries, no SQL needed (Available Now)
+- SecureNet Monitor: AI-driven cloud threat detection, 80% MTTD reduction (Beta)
+- FlowForge: Visual workflow automation, 200+ integrations, no-code (Enterprise)
+
+AMR's process: Discovery → Architecture → Build & Iterate → Deploy & Support.
+Contact: arvin139143@gmail.com
+
+IMPORTANT: Always respond in English only, regardless of the language used by the user.
+Be concise, helpful, and professional. Keep answers under 100 words unless more detail is genuinely needed. Never make up facts outside of what's provided. If asked something outside AMR's scope, politely redirect to what you can help with.`;
+
+  async function sendMessage(text) {
+    if (!text) return;
+
+    suggestionsEl.style.display = 'none';
+    appendMsg(text, 'user');
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    chatSend.disabled = true;
+
+    const typing = appendTyping();
+    history.push({ role: 'user', content: text });
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: history
+        })
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        const errMsg = errBody?.error?.message || `HTTP ${res.status}`;
+        throw new Error(errMsg);
+      }
+
+      const data = await res.json();
+      const reply = data.content?.map(b => b.text || '').join('') || 'Sorry, I couldn\'t get a response. Please try again.';
+      history.push({ role: 'assistant', content: reply });
+      typing.remove();
+      appendMsg(reply, 'ai');
+    } catch (err) {
+      typing.remove();
+      appendMsg(`Contact AMR directly: arvin139143@gmail.com`, 'ai');
+    }
+
+    chatSend.disabled = false;
+  }
+
+  function appendMsg(text, role) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+  }
+
+  // ── ADD PROJECT MODAL ──
+  let projectImageData = null;
+
+  function openAddProjectModal() {
+    document.getElementById('add-project-overlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeAddProjectModal() {
+    document.getElementById('add-project-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+    projectImageData = null;
+    document.getElementById('proj-img-preview').src = '';
+    document.getElementById('img-upload-preview').style.display = 'none';
+    document.getElementById('img-upload-placeholder').style.display = 'block';
+    document.getElementById('proj-title').value = '';
+    document.getElementById('proj-desc').value = '';
+    document.getElementById('proj-stack').value = '';
+    document.getElementById('proj-modal-status').textContent = '';
+  }
+
+  document.getElementById('add-project-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeAddProjectModal();
+  });
+
+  function handleProjectImageUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      document.getElementById('proj-modal-status').textContent = 'Image must be under 5MB.';
+      document.getElementById('proj-modal-status').style.color = '#f87171';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      projectImageData = e.target.result;
+      document.getElementById('proj-img-preview').src = projectImageData;
+      document.getElementById('img-upload-preview').style.display = 'block';
+      document.getElementById('img-upload-placeholder').style.display = 'none';
+      document.getElementById('proj-modal-status').textContent = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function submitNewProject() {
+    const title = document.getElementById('proj-title').value.trim();
+    const desc = document.getElementById('proj-desc').value.trim();
+    const tag = document.getElementById('proj-tag').value;
+    const year = document.getElementById('proj-year').value;
+    const stackRaw = document.getElementById('proj-stack').value.trim();
+    const status = document.getElementById('proj-modal-status');
+
+    if (!title) {
+      status.textContent = 'Please enter a project title.';
+      status.style.color = '#f87171';
+      document.getElementById('proj-title').focus();
+      return;
+    }
+    if (!desc) {
+      status.textContent = 'Please add a project description.';
+      status.style.color = '#f87171';
+      document.getElementById('proj-desc').focus();
+      return;
+    }
+
+    const stackItems = stackRaw ? stackRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const grid = document.getElementById('projects-grid');
+
+    const card = document.createElement('div');
+    card.className = 'proj-card';
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+
+    const imgHTML = projectImageData
+      ? `<div class="proj-img" style="padding:0;overflow:hidden;border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;"><img src="${projectImageData}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" /></div>`
+      : `<div class="proj-img">📁</div>`;
+
+    const stackHTML = stackItems.length
+      ? `<div class="proj-stack">${stackItems.map(s => `<span>${s}</span>`).join('')}</div>`
+      : '';
+
+    card.innerHTML = `
+      <div class="proj-meta">
+        <span class="proj-tag">${tag}</span>
+        <span class="proj-year">${year}</span>
+      </div>
+      ${imgHTML}
+      <h3>${title}</h3>
+      <p>${desc}</p>
+      ${stackHTML}
+    `;
+
+    grid.appendChild(card);
+
+    requestAnimationFrame(() => {
+      card.style.transition = 'opacity .5s ease, transform .5s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    });
+
+    closeAddProjectModal();
+    showToast('Project added to portfolio ✓');
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function appendTyping() {
+    const div = document.createElement('div');
+    div.className = 'msg-typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+  }
+
+  // Firebase auth state sync
+  window.addEventListener('load', () => {
+    if (window.__fbOnAuthStateChanged) {
+      window.__fbOnAuthStateChanged(user => {
+        if (user && !currentUser) {
+          const displayName = user.displayName || user.email.split('@')[0];
+          const initials = displayName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+          const u = { name: displayName, email: user.email, avatar: initials, provider: 'google' };
+          currentUser = u;
+          updateNavForUser(u);
+        }
+      });
+    }
+  });
+
+  // ── JSONBIN REAL DATA ──
+  const JB_BASE = 'https://api.jsonbin.io/v3';
+  let JB_KEY = localStorage.getItem('amr_jb_key') || '';
+  let JB_BIN_ID = localStorage.getItem('amr_jb_bin') || '';
+
+  // Auto-load if key saved
+  window.addEventListener('load', () => {
+    if (JB_KEY) {
+      const input = document.getElementById('jb-master-key');
+      if (input) input.value = '••••••••••••••••';
+      setJBStatus('✓ متصل — داده از JSONBin بارگذاری میشه', 'var(--cyan)');
+    }
+  });
+
+  async function saveJBKey() {
+    const input = document.getElementById('jb-master-key');
+    const key = input.value.trim();
+    if (!key || key.startsWith('•')) {
+      if (JB_KEY) { loadRealData(); return; }
+      setJBStatus('⚠ لطفاً Master Key را وارد کن', '#f87171'); return;
+    }
+    JB_KEY = key;
+    localStorage.setItem('amr_jb_key', key);
+    input.value = '••••••••••••••••';
+    setJBStatus('در حال اتصال...', 'var(--muted)');
+    await initBin();
+  }
+
+  async function initBin() {
+    // Check if bin exists
+    if (JB_BIN_ID) {
+      await loadRealData();
+      return;
+    }
+    // Create new bin with default data
+    try {
+      const defaultData = {
+        stats: {
+          totalUsers: 0,
+          onlineNow: 0,
+          newToday: 0,
+          aiRequests: 0,
+          openTickets: 0,
+          uptime: '99.9%'
+        },
+        users: [],
+        logs: [],
+        lastUpdated: new Date().toISOString()
+      };
+      const res = await fetch(`${JB_BASE}/b`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JB_KEY,
+          'X-Bin-Name': 'amr-dashboard',
+          'X-Bin-Private': 'true'
+        },
+        body: JSON.stringify(defaultData)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      JB_BIN_ID = data.metadata.id;
+      localStorage.setItem('amr_jb_bin', JB_BIN_ID);
+      setJBStatus('✓ Bin جدید ساخته شد و متصل شدیم!', '#4ade80');
+      await loadRealData();
+    } catch (e) {
+      setJBStatus('✗ خطا: ' + e.message + ' — Master Key را چک کن', '#f87171');
+    }
+  }
+
+  async function loadRealData() {
+    if (!JB_KEY || !JB_BIN_ID) return;
+    try {
+      const res = await fetch(`${JB_BASE}/b/${JB_BIN_ID}/latest`, {
+        headers: { 'X-Master-Key': JB_KEY }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const s = data.record.stats;
+      document.getElementById('stat-total-users').innerHTML = `<em>${s.totalUsers.toLocaleString()}</em>`;
+      document.getElementById('stat-online').innerHTML = `<em>${s.onlineNow}</em>`;
+      document.getElementById('stat-new-today').innerHTML = `<em>${s.newToday}</em>`;
+      document.getElementById('stat-ai-req').innerHTML = `<em>${s.aiRequests.toLocaleString()}</em>`;
+      document.getElementById('stat-tickets').innerHTML = `<em>${s.openTickets}</em>`;
+      document.getElementById('stat-uptime').innerHTML = `<em>${s.uptime}</em>`;
+      setJBStatus('✓ آخرین بروزرسانی: ' + new Date(data.record.lastUpdated).toLocaleTimeString('fa-IR'), 'var(--cyan)');
+
+      // Load users table if exists
+      if (data.record.users && data.record.users.length > 0) {
+        renderUsersTable(data.record.users);
+      }
+    } catch(e) {
+      setJBStatus('✗ خطا در بارگذاری: ' + e.message, '#f87171');
+    }
+  }
+
+  async function updateStat(field, value) {
+    if (!JB_KEY || !JB_BIN_ID) { showToast('ابتدا JSONBin را وصل کن', true); return; }
+    try {
+      // Get current data
+      const res = await fetch(`${JB_BASE}/b/${JB_BIN_ID}/latest`, {
+        headers: { 'X-Master-Key': JB_KEY }
+      });
+      const current = await res.json();
+      current.record.stats[field] = value;
+      current.record.lastUpdated = new Date().toISOString();
+      // Update
+      await fetch(`${JB_BASE}/b/${JB_BIN_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY },
+        body: JSON.stringify(current.record)
+      });
+      await loadRealData();
+      showToast(`✓ ${field} آپدیت شد`);
+    } catch(e) {
+      showToast('خطا: ' + e.message, true);
+    }
+  }
+
+  async function addUser(name, email, role) {
+    if (!JB_KEY || !JB_BIN_ID) { showToast('ابتدا JSONBin را وصل کن', true); return; }
+    try {
+      const res = await fetch(`${JB_BASE}/b/${JB_BIN_ID}/latest`, {
+        headers: { 'X-Master-Key': JB_KEY }
+      });
+      const current = await res.json();
+      const newUser = {
+        id: Date.now(),
+        name, email, role: role || 'user',
+        status: 'active',
+        joinedAt: new Date().toISOString()
+      };
+      current.record.users.push(newUser);
+      current.record.stats.totalUsers = current.record.users.length;
+      current.record.stats.newToday = (current.record.stats.newToday || 0) + 1;
+      current.record.lastUpdated = new Date().toISOString();
+      await fetch(`${JB_BASE}/b/${JB_BIN_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY },
+        body: JSON.stringify(current.record)
+      });
+      await loadRealData();
+      showToast(`✓ کاربر ${name} اضافه شد`);
+    } catch(e) {
+      showToast('خطا: ' + e.message, true);
+    }
+  }
+
+  async function banUser(userId) {
+    if (!JB_KEY || !JB_BIN_ID) { showToast('ابتدا JSONBin را وصل کن', true); return; }
+    try {
+      const res = await fetch(`${JB_BASE}/b/${JB_BIN_ID}/latest`, { headers: { 'X-Master-Key': JB_KEY } });
+      const current = await res.json();
+      const user = current.record.users.find(u => u.id === userId);
+      if (user) {
+        user.status = user.status === 'banned' ? 'active' : 'banned';
+        current.record.lastUpdated = new Date().toISOString();
+        await fetch(`${JB_BASE}/b/${JB_BIN_ID}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY },
+          body: JSON.stringify(current.record)
+        });
+        await loadRealData();
+        showToast(`✓ وضعیت ${user.name} تغییر کرد: ${user.status}`);
+      }
+    } catch(e) { showToast('خطا: ' + e.message, true); }
+  }
+
+  async function deleteUser(userId) {
+    if (!JB_KEY || !JB_BIN_ID) { showToast('ابتدا JSONBin را وصل کن', true); return; }
+    if (!confirm('مطمئنی؟ این کاربر حذف میشه.')) return;
+    try {
+      const res = await fetch(`${JB_BASE}/b/${JB_BIN_ID}/latest`, { headers: { 'X-Master-Key': JB_KEY } });
+      const current = await res.json();
+      current.record.users = current.record.users.filter(u => u.id !== userId);
+      current.record.stats.totalUsers = current.record.users.length;
+      current.record.lastUpdated = new Date().toISOString();
+      await fetch(`${JB_BASE}/b/${JB_BIN_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY },
+        body: JSON.stringify(current.record)
+      });
+      await loadRealData();
+      showToast('✓ کاربر حذف شد');
+    } catch(e) { showToast('خطا: ' + e.message, true); }
+  }
+
+  function renderUsersTable(users) {
+    const container = document.getElementById('users-table-container');
+    if (!container) return;
+    if (users.length === 0) { container.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:16px;">هیچ کاربری ثبت نشده</div>'; return; }
+    container.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(34,211,238,.1);">
+            <th style="text-align:left;padding:8px 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--cyan);font-weight:400;">نام</th>
+            <th style="text-align:left;padding:8px 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--cyan);font-weight:400;">ایمیل</th>
+            <th style="text-align:left;padding:8px 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--cyan);font-weight:400;">نقش</th>
+            <th style="text-align:left;padding:8px 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--cyan);font-weight:400;">وضعیت</th>
+            <th style="text-align:left;padding:8px 12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--cyan);font-weight:400;">عملیات</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${users.map(u => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s;" onmouseover="this.style.background='rgba(34,211,238,.03)'" onmouseout="this.style.background='transparent'">
+              <td style="padding:10px 12px;color:var(--txt);">${u.name}</td>
+              <td style="padding:10px 12px;color:var(--dim);font-family:var(--mono);font-size:11px;">${u.email}</td>
+              <td style="padding:10px 12px;"><span style="font-family:var(--mono);font-size:9.5px;padding:2px 8px;border-radius:3px;background:rgba(59,130,246,.1);color:var(--pale);">${u.role}</span></td>
+              <td style="padding:10px 12px;"><span style="font-family:var(--mono);font-size:9.5px;color:${u.status==='banned'?'#f87171':'#4ade80'};">${u.status==='banned'?'مسدود':'فعال'}</span></td>
+              <td style="padding:10px 12px;display:flex;gap:6px;">
+                <button onclick="banUser(${u.id})" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid rgba(251,191,36,.2);background:rgba(251,191,36,.07);color:#fbbf24;cursor:pointer;font-family:var(--mono);">${u.status==='banned'?'رفع مسدود':'مسدود'}</button>
+                <button onclick="deleteUser(${u.id})" style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.07);color:#f87171;cursor:pointer;font-family:var(--mono);">حذف</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function setJBStatus(msg, color) {
+    const el = document.getElementById('jb-status');
+    if (el) { el.textContent = msg; el.style.color = color; }
+  }
+
+  // ── DEVELOPER PANEL ──
+  const DEV_PASSWORD = '22225486amr';
+
+  function openDevPw() {
+    document.getElementById('dev-pw-overlay').classList.add('open');
+    document.getElementById('dev-pw-input').value = '';
+    document.getElementById('dev-pw-error').textContent = '';
+    setTimeout(() => document.getElementById('dev-pw-input').focus(), 100);
+  }
+
+  function closeDevPw() {
+    document.getElementById('dev-pw-overlay').classList.remove('open');
+  }
+
+  function checkDevPw() {
+    const val = document.getElementById('dev-pw-input').value;
+    if (val === DEV_PASSWORD) {
+      closeDevPw();
+      openDevDash();
+      logSecurityEvent('loginLogs', { who: 'developer', result: 'success' });
+    } else {
+      const err = document.getElementById('dev-pw-error');
+      err.textContent = '⚠ رمز عبور اشتباه است. دسترسی رد شد.';
+      document.getElementById('dev-pw-input').value = '';
+      document.getElementById('dev-pw-input').focus();
+      setTimeout(() => { err.textContent = ''; }, 3000);
+      logSecurityEvent('failedLogins', { who: 'developer-panel', result: 'failed' });
+    }
+  }
+
+  document.getElementById('dev-pw-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkDevPw();
+  });
+
+  document.getElementById('dev-pw-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeDevPw();
+  });
+
+  function openDevDash() {
+    document.getElementById('dev-dashboard').classList.add('open');
+    startDevClock();
+  }
+
+  function closeDevDash() {
+    document.getElementById('dev-dashboard').classList.remove('open');
+    stopDevClock();
+  }
+
+  let devClockInterval = null;
+  function startDevClock() {
+    function tick() {
+      const now = new Date();
+      document.getElementById('dev-clock').textContent = now.toLocaleTimeString('fa-IR', { hour12: false });
+    }
+    tick();
+    devClockInterval = setInterval(tick, 1000);
+  }
+  function stopDevClock() {
+    if (devClockInterval) clearInterval(devClockInterval);
+  }
+
+  // ── GENERIC REAL DATA ENGINE (JSONBin-backed, no fake/random data) ──
+  let DB_CACHE = null;
+
+  function requireJB() {
+    if (!JB_KEY || !JB_BIN_ID) { showToast('ابتدا JSONBin را وصل کن', true); return false; }
+    return true;
+  }
+
+  async function getRecord(force) {
+    if (DB_CACHE && !force) return DB_CACHE;
+    const res = await fetch(`${JB_BASE}/b/${JB_BIN_ID}/latest`, { headers: { 'X-Master-Key': JB_KEY } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    DB_CACHE = data.record;
+    return DB_CACHE;
+  }
+
+  async function saveRecord(actionLabel) {
+    DB_CACHE.lastUpdated = new Date().toISOString();
+    if (actionLabel) {
+      if (!DB_CACHE.adminLogs) DB_CACHE.adminLogs = [];
+      DB_CACHE.adminLogs.unshift({ id: Date.now(), action: actionLabel, at: new Date().toISOString() });
+      DB_CACHE.adminLogs = DB_CACHE.adminLogs.slice(0, 300);
+    }
+    await fetch(`${JB_BASE}/b/${JB_BIN_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY },
+      body: JSON.stringify(DB_CACHE)
+    });
+    return DB_CACHE;
+  }
+
+  function logSecurityEvent(collectionKey, entry) {
+    if (!JB_KEY || !JB_BIN_ID) return; // no fake logging without a real backend
+    getRecord().then(rec => {
+      if (!rec[collectionKey]) rec[collectionKey] = [];
+      rec[collectionKey].unshift(Object.assign({ id: Date.now(), at: new Date().toISOString() }, entry));
+      rec[collectionKey] = rec[collectionKey].slice(0, 200);
+      saveRecord();
+    }).catch(() => {});
+  }
+
+  function logAiError(message) {
+    if (!JB_KEY || !JB_BIN_ID) return;
+    getRecord().then(rec => {
+      if (!rec.aiErrors) rec.aiErrors = [];
+      rec.aiErrors.unshift({ id: Date.now(), message, at: new Date().toISOString() });
+      rec.aiErrors = rec.aiErrors.slice(0, 200);
+      saveRecord();
+    }).catch(() => {});
+  }
+
+  function incrementAiRequestCount() {
+    if (!JB_KEY || !JB_BIN_ID) return;
+    getRecord().then(rec => {
+      rec.stats.aiRequests = (rec.stats.aiRequests || 0) + 1;
+      saveRecord();
+      loadRealData();
+    }).catch(() => {});
+  }
+
+  // Real, in-session runtime error capture (no external service, no fake entries)
+  window.__appErrors = [];
+  window.addEventListener('error', e => {
+    window.__appErrors.unshift({ message: e.message, source: e.filename + ':' + e.lineno, at: new Date().toISOString() });
+    window.__appErrors = window.__appErrors.slice(0, 100);
+  });
+
+  function panelShow(html) {
+    const p = document.getElementById('dev-output-panel');
+    p.style.display = 'block';
+    p.innerHTML = html;
+    p.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── Collection registry: every item below is real data CRUD against your JSONBin record ──
+  const COLLECTIONS = {
+    projects:  { title: 'مدیریت پروژه‌ها', fields: [
+      {key:'title', label:'عنوان پروژه'}, {key:'client', label:'مشتری'},
+      {key:'status', label:'وضعیت', type:'select', options:['در حال انجام','تکمیل شده','متوقف شده']},
+      {key:'featured', label:'ویژه؟', type:'select', options:['خیر','بله']}
+    ]},
+    portfolio: { title: 'مدیریت نمونه‌کارها', fields: [
+      {key:'title', label:'عنوان'}, {key:'category', label:'دسته'}, {key:'imageUrl', label:'لینک تصویر'}, {key:'link', label:'لینک پروژه'}
+    ]},
+    roadmap: { title: 'نقشه راه پروژه', fields: [
+      {key:'title', label:'مرحله'}, {key:'status', label:'وضعیت', type:'select', options:['برنامه‌ریزی شده','در حال انجام','انجام شده']}, {key:'eta', label:'تاریخ تخمینی'}
+    ]},
+    changelog: { title: 'مدیریت نسخه‌ها و لیست تغییرات', fields: [
+      {key:'version', label:'نسخه'}, {key:'date', label:'تاریخ'}, {key:'notes', label:'توضیحات', type:'textarea'}
+    ]},
+    apiKeys: { title: 'مدیریت API Keys', fields: [
+      {key:'label', label:'برچسب'}, {key:'key', label:'کلید'}
+    ]},
+    emailTemplates: { title: 'مدیریت قالب‌های ایمیل', fields: [
+      {key:'name', label:'نام قالب'}, {key:'subject', label:'موضوع'}, {key:'body', label:'متن', type:'textarea'}
+    ]},
+    news: { title: 'مدیریت اخبار', fields: [
+      {key:'title', label:'عنوان'}, {key:'date', label:'تاریخ'}, {key:'content', label:'متن', type:'textarea'}
+    ]},
+    blog: { title: 'مدیریت وبلاگ', fields: [
+      {key:'title', label:'عنوان'}, {key:'author', label:'نویسنده'}, {key:'date', label:'تاریخ'}, {key:'content', label:'متن', type:'textarea'}
+    ]},
+    contactMessages: { title: 'پیام‌های تماس', fields: [
+      {key:'name', label:'نام'}, {key:'email', label:'ایمیل'}, {key:'message', label:'پیام', type:'textarea'}
+    ]},
+    tickets: { title: 'تیکت‌های پشتیبانی', fields: [
+      {key:'subject', label:'موضوع'}, {key:'message', label:'پیام', type:'textarea'},
+      {key:'status', label:'وضعیت', type:'select', options:['باز','در حال بررسی','پاسخ داده شده','بسته']},
+      {key:'reply', label:'پاسخ', type:'textarea'}
+    ]},
+    media: { title: 'کتابخانه رسانه', fields: [
+      {key:'name', label:'نام'}, {key:'url', label:'لینک فایل'}
+    ]},
+    clients: { title: 'مدیریت مشتریان', fields: [
+      {key:'name', label:'نام'}, {key:'company', label:'شرکت'}, {key:'email', label:'ایمیل'}, {key:'phone', label:'تلفن'}
+    ]},
+    orders: { title: 'مدیریت سفارش‌ها', fields: [
+      {key:'client', label:'مشتری'}, {key:'project', label:'پروژه'}, {key:'amount', label:'مبلغ (تومان)'},
+      {key:'status', label:'وضعیت', type:'select', options:['در انتظار','پرداخت‌شده','تکمیل شده','لغو شده']}
+    ]},
+    hiring: { title: 'مدیریت استخدام', fields: [
+      {key:'position', label:'موقعیت شغلی'}, {key:'openings', label:'تعداد نیاز'},
+      {key:'status', label:'وضعیت', type:'select', options:['باز','بسته']}
+    ]},
+    applications: { title: 'درخواست‌های همکاری', fields: [
+      {key:'name', label:'نام'}, {key:'position', label:'موقعیت'}, {key:'email', label:'ایمیل'}, {key:'link', label:'لینک رزومه'}
+    ]},
+    feedback: { title: 'مدیریت بازخورد', fields: [
+      {key:'name', label:'نام'}, {key:'rating', label:'امتیاز (۱ تا ۵)'}, {key:'message', label:'پیام', type:'textarea'}
+    ]},
+    featureRequests: { title: 'درخواست قابلیت جدید', fields: [
+      {key:'title', label:'عنوان'}, {key:'description', label:'توضیحات', type:'textarea'}, {key:'votes', label:'تعداد رای'}
+    ]},
+    betaTesters: { title: 'مدیریت تست‌کنندگان بتا', fields: [
+      {key:'name', label:'نام'}, {key:'email', label:'ایمیل'},
+      {key:'status', label:'وضعیت', type:'select', options:['فعال','غیرفعال']}
+    ]},
+    files: { title: 'مدیریت فایل‌ها', fields: [
+      {key:'name', label:'نام فایل'}, {key:'url', label:'لینک فایل'}
+    ]},
+    notifications: { title: 'مرکز اعلان‌های داخلی تیم', fields: [
+      {key:'title', label:'عنوان'}, {key:'message', label:'متن', type:'textarea'}
+    ]}
+  };
+
+  function fieldInput(colKey, idx, f, value) {
+    const id = `cf-${colKey}-${idx}-${f.key}`;
+    if (f.type === 'select') {
+      return `<select id="${id}" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--txt);font-size:11px;">${f.options.map(o=>`<option ${o===value?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+    }
+    if (f.type === 'textarea') {
+      return `<textarea id="${id}" rows="2" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--txt);font-size:11px;">${esc(value)}</textarea>`;
+    }
+    return `<input id="${id}" value="${esc(value)}" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--txt);font-size:11px;"/>`;
+  }
+
+  async function openCollection(key) {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    if (!rec[key]) rec[key] = [];
+    renderCollection(key);
+  }
+
+  function renderCollection(key) {
+    const cfg = COLLECTIONS[key];
+    const items = DB_CACHE[key] || [];
+    const addRow = cfg.fields.map(f => `<div style="flex:1;min-width:120px;"><label style="font-family:var(--mono);font-size:9px;color:var(--muted);">${esc(f.label)}</label>${fieldInput(key,'new',f,'')}</div>`).join('');
+    const rows = items.map((it, idx) => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+        ${cfg.fields.map(f => `<td style="padding:6px 8px;">${fieldInput(key, idx, f, it[f.key])}</td>`).join('')}
+        <td style="padding:6px 8px;white-space:nowrap;">
+          <button onclick="saveCollectionRow('${key}', ${idx})" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid rgba(34,211,238,.25);background:rgba(34,211,238,.08);color:var(--cyan);cursor:pointer;font-family:var(--mono);">ذخیره</button>
+          <button onclick="deleteCollectionRow('${key}', ${idx})" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid rgba(248,113,113,.25);background:rgba(248,113,113,.08);color:#f87171;cursor:pointer;font-family:var(--mono);">حذف</button>
+        </td>
+      </tr>`).join('');
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:.15em;color:var(--cyan);margin-bottom:14px;">// ${esc(cfg.title)} — داده واقعی از JSONBin</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end;">
+        ${addRow}
+        <button onclick="addCollectionRow('${key}')" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;height:32px;">+ افزودن</button>
+      </div>
+      ${items.length === 0 ? '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);">هیچ موردی ثبت نشده — وارد کن و «افزودن» را بزن.</div>' : `
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <thead><tr>${cfg.fields.map(f=>`<th style="text-align:left;padding:6px 8px;font-family:var(--mono);font-size:9px;color:var(--cyan);">${esc(f.label)}</th>`).join('')}<th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`}
+    `);
+  }
+
+  function readCollectionRow(key, idx) {
+    const cfg = COLLECTIONS[key];
+    const obj = {};
+    cfg.fields.forEach(f => {
+      const el = document.getElementById(`cf-${key}-${idx}-${f.key}`);
+      obj[f.key] = el ? el.value.trim() : '';
+    });
+    return obj;
+  }
+
+  async function addCollectionRow(key) {
+    if (!requireJB()) return;
+    const obj = readCollectionRow(key, 'new');
+    const hasAny = Object.values(obj).some(v => v);
+    if (!hasAny) { showToast('حداقل یک فیلد را پر کن', true); return; }
+    obj.id = Date.now();
+    obj.createdAt = new Date().toISOString();
+    await getRecord();
+    if (!DB_CACHE[key]) DB_CACHE[key] = [];
+    DB_CACHE[key].unshift(obj);
+    await saveRecord(`افزودن مورد در ${COLLECTIONS[key].title}`);
+    renderCollection(key);
+    showToast('✓ ذخیره شد');
+  }
+
+  async function saveCollectionRow(key, idx) {
+    if (!requireJB()) return;
+    const obj = readCollectionRow(key, idx);
+    Object.assign(DB_CACHE[key][idx], obj);
+    await saveRecord(`ویرایش مورد در ${COLLECTIONS[key].title}`);
+    showToast('✓ تغییرات ذخیره شد');
+  }
+
+  async function deleteCollectionRow(key, idx) {
+    if (!requireJB()) return;
+    if (!confirm('مطمئنی این مورد حذف شود؟')) return;
+    DB_CACHE[key].splice(idx, 1);
+    await saveRecord(`حذف مورد از ${COLLECTIONS[key].title}`);
+    renderCollection(key);
+    showToast('✓ حذف شد');
+  }
+
+  // ── Users panel (extends existing real CRUD) with role filter + role editing ──
+  async function openUsersPanel(filterRole) {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    let users = rec.users || [];
+    if (filterRole) users = users.filter(u => u.role === filterRole);
+    document.getElementById('users-table-container')?.scrollIntoView({ behavior: 'smooth' });
+    renderUsersTable(users);
+    await loadRealData();
+  }
+
+  async function setUserRole(userId, role) {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const u = rec.users.find(x => x.id === userId);
+    if (!u) return;
+    u.role = role;
+    await saveRecord('تغییر نقش کاربر');
+    showToast(`✓ نقش ${u.name} به ${role} تغییر کرد`);
+    openUsersPanel();
+  }
+
+  // ── AI panels ──
+  async function openAiRequestsPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    panelShow(`<div style="font-family:var(--mono);font-size:11px;color:var(--cyan);">// تعداد واقعی درخواست‌های موفق به AI Console: <em style="color:var(--txt);font-size:16px;">${rec.stats.aiRequests || 0}</em></div>`);
+  }
+
+  function openAiErrorsPanel() {
+    if (!requireJB()) return;
+    getRecord().then(rec => {
+      const errs = rec.aiErrors || [];
+      panelShow(`
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// لاگ خطاهای واقعی AI Console (${errs.length})</div>
+        ${errs.length === 0 ? '<div style="color:var(--muted);font-size:11px;">تا الان خطایی ثبت نشده.</div>' :
+          errs.map(e => `<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:6px 0;font-size:11px;color:var(--txt);">${esc(e.at)} — ${esc(e.message)}</div>`).join('')}
+      `);
+    });
+  }
+
+  async function openAiSettingsPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const s = rec.aiSettings || { systemPromptExtra: '', maxTokens: 1000 };
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// تنظیمات AI Console — ذخیره واقعی در JSONBin</div>
+      <label style="font-size:10px;color:var(--muted);">دستور تکمیلی برای سیستم AI</label>
+      <textarea id="ai-set-extra" rows="3" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;margin:6px 0 12px;">${esc(s.systemPromptExtra)}</textarea>
+      <label style="font-size:10px;color:var(--muted);">حداکثر توکن پاسخ</label>
+      <input id="ai-set-tokens" value="${esc(s.maxTokens)}" style="width:120px;display:block;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;margin:6px 0 12px;"/>
+      <button onclick="saveAiSettings()" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">ذخیره</button>
+    `);
+  }
+  async function saveAiSettings() {
+    DB_CACHE.aiSettings = {
+      systemPromptExtra: document.getElementById('ai-set-extra').value.trim(),
+      maxTokens: parseInt(document.getElementById('ai-set-tokens').value) || 1000
+    };
+    await saveRecord('بروزرسانی تنظیمات AI');
+    showToast('✓ تنظیمات AI ذخیره شد');
+  }
+
+  // ── Security logs (real, only populated by real events) ──
+  function openLogPanel(key, title) {
+    if (!requireJB()) return;
+    getRecord().then(rec => {
+      const items = rec[key] || [];
+      panelShow(`
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// ${esc(title)} (${items.length} مورد ثبت‌شده واقعی)</div>
+        ${items.length === 0 ? '<div style="color:var(--muted);font-size:11px;">هنوز رویدادی ثبت نشده.</div>' :
+          items.map(it => `<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:6px 0;font-size:11px;color:var(--txt);">${esc(new Date(it.at).toLocaleString('fa-IR'))} — ${esc(it.who || it.action || '')} ${it.result ? '('+esc(it.result)+')' : ''}</div>`).join('')}
+      `);
+    });
+  }
+
+  // ── API keys (generate real random keys, stored for real reference — not validated server-side since there is no server) ──
+  function genApiKey() {
+    const arr = new Uint8Array(24);
+    crypto.getRandomValues(arr);
+    return 'amr_' + Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  async function openApiKeysPanel() {
+    if (!requireJB()) return;
+    await getRecord();
+    if (!DB_CACHE.apiKeys) DB_CACHE.apiKeys = [];
+    renderCollection('apiKeys');
+  }
+
+  // ── Discord/Webhook (real outbound POST — Discord webhooks accept direct browser fetch) ──
+  async function openWebhookPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const url = (rec.webhook && rec.webhook.discordUrl) || '';
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// اتصال Discord Webhook — درخواست واقعی ارسال میشه</div>
+      <input id="wh-url" placeholder="https://discord.com/api/webhooks/..." value="${esc(url)}" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--txt);font-size:12px;margin-bottom:10px;"/>
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveWebhook()" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">ذخیره</button>
+        <button onclick="testWebhook()" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:6px;padding:8px 16px;color:#4ade80;font-family:var(--mono);font-size:11px;cursor:pointer;">ارسال پیام تست واقعی</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:10px;">ایمیل و SMS واقعی نیاز به اتصال سرویس بیرونی (SMTP/Email API) دارند که در این پنل به‌صورت پیش‌فرض وجود ندارد — به همین خاطر فقط Discord Webhook (که از مرورگر مستقیم کار می‌کند) فعال است.</div>
+    `);
+  }
+  async function saveWebhook() {
+    DB_CACHE.webhook = { discordUrl: document.getElementById('wh-url').value.trim() };
+    await saveRecord('بروزرسانی Webhook');
+    showToast('✓ ذخیره شد');
+  }
+  async function testWebhook() {
+    const url = document.getElementById('wh-url').value.trim();
+    if (!url) { showToast('لینک Webhook را وارد کن', true); return; }
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: `✅ پیام تست واقعی از پنل دولوپر AMR — ${new Date().toLocaleString('fa-IR')}` })
+      });
+      showToast(res.ok ? '✓ پیام واقعی به Discord ارسال شد' : 'خطا: Discord کد ' + res.status, !res.ok);
+    } catch (e) {
+      showToast('خطا در ارسال: ' + e.message, true);
+    }
+  }
+
+  // ── Analytics — computed live from real stored data, never random ──
+  async function openAnalyticsUsersPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const users = rec.users || [];
+    const byRole = {};
+    users.forEach(u => byRole[u.role] = (byRole[u.role]||0) + 1);
+    const banned = users.filter(u => u.status === 'banned').length;
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// آمار واقعی کاربران (محاسبه‌شده از داده فعلی JSONBin)</div>
+      <div style="font-size:12px;color:var(--txt);line-height:2;">
+        کل کاربران: <b>${users.length}</b><br/>
+        مسدودشده: <b>${banned}</b><br/>
+        فعال: <b>${users.length - banned}</b><br/>
+        ${Object.entries(byRole).map(([r,c]) => `نقش ${esc(r)}: <b>${c}</b>`).join('<br/>')}
+      </div>
+    `);
+  }
+
+  function openErrorsReportPanel() {
+    const errs = window.__appErrors || [];
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// خطاهای واقعی ثبت‌شده در این نشست مرورگر (${errs.length})</div>
+      ${errs.length === 0 ? '<div style="color:var(--muted);font-size:11px;">در این نشست هیچ خطای واقعی رخ نداده.</div>' :
+        errs.map(e => `<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:6px 0;font-size:11px;color:var(--txt);">${esc(e.at)} — ${esc(e.message)} <span style="color:var(--muted);">(${esc(e.source)})</span></div>`).join('')}
+      <div style="font-size:10px;color:var(--muted);margin-top:10px;">این خطاها فقط در همین نشست مرورگر ثبت می‌شوند و فقط شامل خطاهای واقعی JS هستند، نه داده‌ی فرضی.</div>
+    `);
+  }
+
+  // ── Backup / DB / Import-Export — all real against the actual JSONBin record ──
+  async function downloadBackup() {
+    if (!requireJB()) return;
+    const rec = await getRecord(true);
+    const blob = new Blob([JSON.stringify(rec, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `amr-backup-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('✓ فایل بکاپ واقعی دانلود شد');
+  }
+
+  async function openDbManagePanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord(true);
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// محتوای واقعی دیتابیس JSONBin — قابل ویرایش مستقیم</div>
+      <textarea id="db-raw" rows="14" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:6px;padding:10px;color:#a3e635;font-family:var(--mono);font-size:11px;">${esc(JSON.stringify(rec, null, 2))}</textarea>
+      <div style="font-size:10px;color:var(--muted);margin:8px 0;">⚠ این متن، محتوای واقعی دیتابیس شماست. اگر JSON نامعتبر ذخیره کنی، دیتابیس خراب میشه.</div>
+      <button onclick="saveDbRaw()" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);border-radius:6px;padding:8px 16px;color:#fbbf24;font-family:var(--mono);font-size:11px;cursor:pointer;">ذخیره مستقیم در دیتابیس</button>
+    `);
+  }
+  async function saveDbRaw() {
+    let parsed;
+    try { parsed = JSON.parse(document.getElementById('db-raw').value); }
+    catch (e) { showToast('JSON نامعتبر است: ' + e.message, true); return; }
+    if (!confirm('مطمئنی؟ این جایگزین کامل دیتابیس واقعی میشه.')) return;
+    DB_CACHE = parsed;
+    await saveRecord('ویرایش مستقیم دیتابیس');
+    showToast('✓ دیتابیس بروزرسانی شد');
+    loadRealData();
+  }
+
+  async function openDataImportPanel() {
+    if (!requireJB()) return;
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// ورود داده واقعی — یک فایل JSON معتبر انتخاب کن</div>
+      <input type="file" id="import-file" accept="application/json" style="font-size:12px;color:var(--txt);margin-bottom:10px;"/>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">داده‌ی فایل با دیتابیس فعلی Merge میشه (آرایه‌ها به هم اضافه میشن، نه جایگزین).</div>
+      <button onclick="runDataImport()" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">وارد کردن</button>
+    `);
+  }
+  async function runDataImport() {
+    const fileInput = document.getElementById('import-file');
+    const file = fileInput.files[0];
+    if (!file) { showToast('یک فایل انتخاب کن', true); return; }
+    try {
+      const text = await file.text();
+      const incoming = JSON.parse(text);
+      await getRecord();
+      Object.keys(incoming).forEach(k => {
+        if (Array.isArray(incoming[k])) {
+          DB_CACHE[k] = (DB_CACHE[k] || []).concat(incoming[k]);
+        } else if (typeof incoming[k] === 'object') {
+          DB_CACHE[k] = Object.assign({}, DB_CACHE[k] || {}, incoming[k]);
+        }
+      });
+      await saveRecord('ورود داده از فایل خارجی');
+      showToast('✓ داده با موفقیت وارد شد');
+      loadRealData();
+    } catch (e) {
+      showToast('خطا در پردازش فایل: ' + e.message, true);
+    }
+  }
+
+  function openAdminLogsPanel() {
+    if (!requireJB()) return;
+    getRecord().then(rec => {
+      const logs = rec.adminLogs || [];
+      panelShow(`
+        <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// لاگ مدیریتی واقعی (تاریخچه فعالیت‌ها) — ${logs.length} رویداد</div>
+        ${logs.length === 0 ? '<div style="color:var(--muted);font-size:11px;">هنوز فعالیتی ثبت نشده.</div>' :
+          logs.map(l => `<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:6px 0;font-size:11px;color:var(--txt);">${esc(new Date(l.at).toLocaleString('fa-IR'))} — ${esc(l.action)}</div>`).join('')}
+      `);
+    });
+  }
+
+  // ── Site / Theme / SEO settings — real, applied live ──
+  async function openSiteSettingsPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const s = rec.siteSettings || { siteName:'AMR', supportEmail:'', supportPhone:'', maintenanceNotice:'' };
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// تنظیمات سایت — ذخیره واقعی</div>
+      ${['siteName:نام سایت','supportEmail:ایمیل پشتیبانی','supportPhone:تلفن پشتیبانی','maintenanceNotice:پیام حالت تعمیرات'].map(pair=>{
+        const [k,label]=pair.split(':');
+        return `<label style="font-size:10px;color:var(--muted);display:block;margin-top:8px;">${label}</label><input id="site-${k}" value="${esc(s[k]||'')}" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;"/>`;
+      }).join('')}
+      <button onclick="saveSiteSettings()" style="margin-top:12px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">ذخیره</button>
+    `);
+  }
+  async function saveSiteSettings() {
+    DB_CACHE.siteSettings = {
+      siteName: document.getElementById('site-siteName').value.trim(),
+      supportEmail: document.getElementById('site-supportEmail').value.trim(),
+      supportPhone: document.getElementById('site-supportPhone').value.trim(),
+      maintenanceNotice: document.getElementById('site-maintenanceNotice').value.trim()
+    };
+    await saveRecord('بروزرسانی تنظیمات سایت');
+    showToast('✓ ذخیره شد');
+  }
+
+  async function openThemeSettingsPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const s = rec.themeSettings || { primaryColor: '#22d3ee' };
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// تنظیمات قالب — اعمال واقعی روی رنگ اصلی سایت</div>
+      <label style="font-size:10px;color:var(--muted);display:block;">رنگ اصلی (hex)</label>
+      <input id="theme-color" type="color" value="${esc(s.primaryColor)}" style="margin:8px 0;width:60px;height:36px;background:none;border:1px solid var(--border);border-radius:6px;"/>
+      <button onclick="saveThemeSettings()" style="display:block;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">ذخیره و اعمال</button>
+    `);
+  }
+  async function saveThemeSettings() {
+    const color = document.getElementById('theme-color').value;
+    DB_CACHE.themeSettings = { primaryColor: color };
+    document.documentElement.style.setProperty('--cyan', color);
+    await saveRecord('بروزرسانی رنگ قالب');
+    showToast('✓ رنگ قالب واقعاً اعمال و ذخیره شد');
+  }
+
+  async function openSeoSettingsPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord();
+    const s = rec.seoSettings || { metaTitle: document.title, metaDescription: '', keywords: '' };
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// تنظیمات SEO — اعمال واقعی روی &lt;head&gt; صفحه</div>
+      <label style="font-size:10px;color:var(--muted);display:block;">عنوان صفحه</label>
+      <input id="seo-title" value="${esc(s.metaTitle)}" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;margin-bottom:8px;"/>
+      <label style="font-size:10px;color:var(--muted);display:block;">توضیحات متا</label>
+      <textarea id="seo-desc" rows="2" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;margin-bottom:8px;">${esc(s.metaDescription)}</textarea>
+      <label style="font-size:10px;color:var(--muted);display:block;">کلمات کلیدی</label>
+      <input id="seo-keywords" value="${esc(s.keywords)}" style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;margin-bottom:10px;"/>
+      <button onclick="saveSeoSettings()" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">ذخیره و اعمال</button>
+    `);
+  }
+  async function saveSeoSettings() {
+    const title = document.getElementById('seo-title').value.trim();
+    const desc = document.getElementById('seo-desc').value.trim();
+    const keywords = document.getElementById('seo-keywords').value.trim();
+    DB_CACHE.seoSettings = { metaTitle: title, metaDescription: desc, keywords };
+    document.title = title;
+    let m = document.querySelector('meta[name="description"]');
+    if (!m) { m = document.createElement('meta'); m.name = 'description'; document.head.appendChild(m); }
+    m.content = desc;
+    let mk = document.querySelector('meta[name="keywords"]');
+    if (!mk) { mk = document.createElement('meta'); mk.name = 'keywords'; document.head.appendChild(mk); }
+    mk.content = keywords;
+    await saveRecord('بروزرسانی تنظیمات SEO');
+    showToast('✓ تغییرات SEO واقعاً روی صفحه اعمال و ذخیره شد');
+  }
+
+  // ── Team chat — real, persisted via JSONBin polling ──
+  let teamChatPoll = null;
+  async function openTeamChatPanel() {
+    if (!requireJB()) return;
+    await renderTeamChat();
+    if (teamChatPoll) clearInterval(teamChatPoll);
+    teamChatPoll = setInterval(renderTeamChat, 6000);
+  }
+  async function renderTeamChat() {
+    const rec = await getRecord(true);
+    const msgs = rec.teamChat || [];
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// چت تیمی واقعی — ذخیره‌شده در JSONBin، هر ۶ ثانیه آپدیت میشه</div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:10px;margin-bottom:10px;">
+        ${msgs.length === 0 ? '<div style="color:var(--muted);font-size:11px;">پیامی نیست. اولین پیام رو بفرست.</div>' :
+          msgs.slice().reverse().map(m => `<div style="margin-bottom:6px;font-size:12px;"><b style="color:var(--cyan);">${esc(m.sender)}:</b> <span style="color:var(--txt);">${esc(m.message)}</span> <span style="color:var(--muted);font-size:9px;">${esc(new Date(m.at).toLocaleTimeString('fa-IR'))}</span></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="chat-sender" placeholder="نام تو" style="width:100px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;"/>
+        <input id="chat-msg" placeholder="پیام..." style="flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--txt);font-size:12px;"/>
+        <button onclick="sendTeamChat()" style="background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:6px;padding:8px 16px;color:var(--cyan);font-family:var(--mono);font-size:11px;cursor:pointer;">ارسال</button>
+      </div>
+    `);
+  }
+  async function sendTeamChat() {
+    const sender = document.getElementById('chat-sender').value.trim() || 'دولوپر';
+    const message = document.getElementById('chat-msg').value.trim();
+    if (!message) return;
+    await getRecord();
+    if (!DB_CACHE.teamChat) DB_CACHE.teamChat = [];
+    DB_CACHE.teamChat.push({ sender, message, at: new Date().toISOString() });
+    DB_CACHE.teamChat = DB_CACHE.teamChat.slice(-100);
+    await saveRecord();
+    renderTeamChat();
+  }
+
+  // ── Control center: real aggregated overview, computed not fabricated ──
+  async function openControlCenterPanel() {
+    if (!requireJB()) return;
+    const rec = await getRecord(true);
+    const c = k => (rec[k] || []).length;
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// مرکز کنترل AMR — نمای کلی واقعی (محاسبه‌شده زنده از JSONBin)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;font-size:12px;color:var(--txt);">
+        <div>👥 کاربران: <b>${c('users')}</b></div>
+        <div>📁 پروژه‌ها: <b>${c('projects')}</b></div>
+        <div>🎫 تیکت‌های باز: <b>${(rec.tickets||[]).filter(t=>t.status!=='بسته').length}</b></div>
+        <div>📰 اخبار: <b>${c('news')}</b></div>
+        <div>✍️ مطالب وبلاگ: <b>${c('blog')}</b></div>
+        <div>🤝 مشتریان: <b>${c('clients')}</b></div>
+        <div>📦 سفارش‌ها: <b>${c('orders')}</b></div>
+        <div>🧪 بتا تسترها: <b>${c('betaTesters')}</b></div>
+        <div>🤖 درخواست AI: <b>${rec.stats.aiRequests || 0}</b></div>
+      </div>
+    `);
+  }
+
+  // ── Global search — real client-side search across loaded collections ──
+  async function openGlobalSearchPanel() {
+    if (!requireJB()) return;
+    await getRecord();
+    panelShow(`
+      <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px;">// جستجوی سراسری واقعی در داده‌های ذخیره‌شده</div>
+      <input id="gsearch-q" placeholder="جستجو در کاربران، پروژه‌ها، تیکت‌ها، اخبار، وبلاگ..." style="width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--txt);font-size:12px;margin-bottom:10px;"/>
+      <div id="gsearch-results" style="font-size:12px;color:var(--txt);"></div>
+    `);
+    document.getElementById('gsearch-q').addEventListener('input', runGlobalSearch);
+  }
+  function runGlobalSearch() {
+    const q = document.getElementById('gsearch-q').value.trim().toLowerCase();
+    const out = document.getElementById('gsearch-results');
+    if (!q) { out.innerHTML = ''; return; }
+    const hits = [];
+    const scan = (key, label, getText) => {
+      (DB_CACHE[key] || []).forEach(item => {
+        const text = getText(item).toLowerCase();
+        if (text.includes(q)) hits.push(`<div style="border-bottom:1px solid rgba(255,255,255,.05);padding:5px 0;">[${label}] ${esc(getText(item))}</div>`);
+      });
+    };
+    scan('users', 'کاربر', u => `${u.name} — ${u.email}`);
+    scan('projects', 'پروژه', p => p.title || '');
+    scan('tickets', 'تیکت', t => t.subject || '');
+    scan('news', 'خبر', n => n.title || '');
+    scan('blog', 'وبلاگ', b => b.title || '');
+    scan('clients', 'مشتری', c => c.name || '');
+    out.innerHTML = hits.length ? hits.join('') : '<div style="color:var(--muted);">نتیجه‌ای پیدا نشد</div>';
+  }
+
+  // ── Feature toggles — now actually persisted to JSONBin, not just a CSS class ──
+  async function toggleFeature(id, checkbox) {
+    const card = document.getElementById('ft-' + id);
+    const on = checkbox.checked;
+    if (on) { card.classList.add('active-toggle'); } else { card.classList.remove('active-toggle'); }
+    showToast(on ? `✓ ${id} فعال شد` : `✗ ${id} غیرفعال شد`, !on);
+    if (!JB_KEY || !JB_BIN_ID) return; // still works visually, but only persists when JSONBin is connected
+    await getRecord();
+    if (!DB_CACHE.featureToggles) DB_CACHE.featureToggles = {};
+    DB_CACHE.featureToggles[id] = on;
+    await saveRecord(`تغییر فیچر ${id} به ${on ? 'فعال' : 'غیرفعال'}`);
+  }
+
+  // ── Master dispatcher — every remaining dev-panel button now does a real action ──
+  const SIMPLE_COLLECTION_MAP = {
+    'آپلود پروژه': 'projects', 'ویرایش پروژه': 'projects', 'حذف پروژه': 'projects',
+    'وضعیت پروژه‌ها': 'projects', 'پروژه‌های ویژه': 'projects',
+    'مدیریت نمونه‌کارها': 'portfolio', 'نقشه راه پروژه': 'roadmap',
+    'مدیریت نسخه‌ها': 'changelog', 'لیست تغییرات': 'changelog',
+    'مدیریت ایمیل‌ها': 'emailTemplates',
+    'مدیریت اخبار': 'news', 'مدیریت وبلاگ': 'blog',
+    'پیام‌های تماس': 'contactMessages',
+    'تیکت‌های پشتیبانی': 'tickets', 'پاسخ به تیکت‌ها': 'tickets',
+    'کتابخانه رسانه': 'media',
+    'مدیریت مشتریان': 'clients', 'مدیریت سفارش‌ها': 'orders',
+    'مدیریت استخدام': 'hiring', 'درخواست همکاری': 'applications',
+    'مدیریت بازخورد': 'feedback', 'درخواست قابلیت جدید': 'featureRequests',
+    'مدیریت تست‌کنندگان بتا': 'betaTesters',
+    'مدیریت فایل‌ها': 'files',
+    'مرکز اعلان‌ها': 'notifications'
+  };
+
+  function devAction(name) {
+    if (SIMPLE_COLLECTION_MAP[name]) { openCollection(SIMPLE_COLLECTION_MAP[name]); return; }
+    switch (name) {
+      case 'مدیریت کاربران': case 'مسدود کردن کاربر': case 'حذف کاربر': case 'تعیین نقش اعضا': case 'سطح دسترسی‌ها':
+        openUsersPanel(); break;
+      case 'مدیریت ادمین‌ها': openUsersPanel('admin'); break;
+      case 'مدیریت اعضای AMR': openUsersPanel('developer'); break;
+      case 'فعالیت کاربران': openLogPanel('loginLogs', 'فعالیت ورود کاربران'); break;
+      case 'درخواست‌های AI': openAiRequestsPanel(); break;
+      case 'لاگ خطاهای AI': openAiErrorsPanel(); break;
+      case 'تنظیمات AI': openAiSettingsPanel(); break;
+      case 'کنترل چت AI':
+        document.getElementById('ft-ai-chat')?.scrollIntoView({ behavior: 'smooth' });
+        showToast('برای روشن/خاموش کردن چت AI، سوییچ پایین صفحه را بزن'); break;
+      case 'لاگ ورود کاربران': openLogPanel('loginLogs', 'لاگ ورود کاربران'); break;
+      case 'تلاش‌های ناموفق ورود': openLogPanel('failedLogins', 'تلاش‌های ناموفق ورود'); break;
+      case 'مدیریت API Keys': openApiKeysPanel(); break;
+      case 'اتصال وبهوک و Discord': openWebhookPanel(); break;
+      case 'آمار کاربران': openAnalyticsUsersPanel(); break;
+      case 'گزارش خطاها': openErrorsReportPanel(); break;
+      case 'سیستم بکاپ': downloadBackup(); break;
+      case 'مدیریت دیتابیس': openDbManagePanel(); break;
+      case 'خروجی داده': downloadBackup(); break;
+      case 'ورود داده': openDataImportPanel(); break;
+      case 'لاگ مدیریتی': case 'تاریخچه فعالیت‌ها': openAdminLogsPanel(); break;
+      case 'تنظیمات سایت': openSiteSettingsPanel(); break;
+      case 'تنظیمات قالب': openThemeSettingsPanel(); break;
+      case 'تنظیمات SEO': openSeoSettingsPanel(); break;
+      case 'چت تیمی': openTeamChatPanel(); break;
+      case 'مرکز کنترل AMR': openControlCenterPanel(); break;
+      case 'جستجوی سراسری': openGlobalSearchPanel(); break;
+      default: showToast(`«${name}» شناسایی نشد`, true);
+    }
+  }
+
+  // ── DEV AI CONSOLE ──
+  const dacHistory = [];
+  const DEV_SYSTEM = `You are an advanced AI assistant embedded in the AMR Developer Console — a private internal panel for AMR's development team. AMR is an AI & IT solutions company.
+
+You assist developers with:
+- Technical architecture decisions and code review
+- Debugging, error analysis, and system diagnostics
+- Database optimization and query tuning
+- API design, security best practices, and DevOps
+- AI/ML model decisions and integration strategies
+- Infrastructure planning (AWS, GCP, Azure)
+- Performance monitoring and optimization
+
+Be technical, precise, and concise. Use Persian or English based on what the developer uses. You have full access context to AMR's internal systems and can provide expert-level technical guidance.`;
+
+  async function dacSend() {
+    const input = document.getElementById('dac-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    dacAppend(text, 'user');
+    dacHistory.push({ role: 'user', content: text });
+
+    const typing = dacTyping();
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          system: DEV_SYSTEM,
+          messages: dacHistory
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.content?.map(b => b.text || '').join('') || 'خطا در دریافت پاسخ.';
+      dacHistory.push({ role: 'assistant', content: reply });
+      typing.remove();
+      dacAppend(reply, 'ai');
+      incrementAiRequestCount();
+    } catch (err) {
+      typing.remove();
+      dacAppend('خطا در اتصال به AI. بعداً دوباره تلاش کنید.', 'ai');
+      logAiError(err && err.message ? err.message : String(err));
+    }
+  }
+
+  function dacAppend(text, role) {
+    const msgs = document.getElementById('dac-messages');
+    const div = document.createElement('div');
+    div.className = 'dm ' + role;
+    div.textContent = text;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  function dacTyping() {
+    const msgs = document.getElementById('dac-messages');
+    const div = document.createElement('div');
+    div.className = 'dm-typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+</script>
+</body>
+</html>
